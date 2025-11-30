@@ -292,29 +292,50 @@ useEffect(() => {
   const checkSession = async () => {
     try {
       console.log('🔍 Starting session check...');
-      
-      // OAuth 콜백 처리 (URL 해시에서 토큰 추출)
+
+      // OAuth 콜백 처리 (URL 해시 또는 쿼리 파라미터에서 토큰 추출)
       const hash = window.location.hash;
-      if (hash && hash.includes('access_token')) {
-        console.log('🔵 OAuth callback detected in URL hash');
-        console.log('📍 Hash length:', hash.length);
-        
-        // URL 해시 정리 (토큰 제거하여 깔끔하게)
+      const searchParams = new URLSearchParams(window.location.search);
+      const hasAuthParams = hash.includes('access_token') || searchParams.has('code');
+
+      if (hasAuthParams) {
+        console.log('🔵 OAuth callback detected');
+
+        // Supabase가 URL에서 세션을 추출할 때까지 대기
+        console.log('⏳ Processing OAuth callback...');
+
+        // exchangeCodeForSession을 사용하여 code를 세션으로 변환 (PKCE 플로우)
+        if (searchParams.has('code')) {
+          const code = searchParams.get('code');
+          console.log('🔑 Found authorization code, exchanging for session...');
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code!);
+          if (error) {
+            console.error('❌ Code exchange error:', error);
+          } else if (data.session) {
+            console.log('✅ Session created from code');
+            setIsLoggedIn(true);
+            setIsMaster(false);
+            const userName = data.session.user.user_metadata?.full_name || data.session.user.email || "";
+            setCurrentUser(userName);
+            toast.success(`환영합니다, ${userName}님!`);
+            // URL 정리
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+        }
+
+        // URL 정리
         window.history.replaceState(null, '', window.location.pathname);
-        
-        // ⚠️ CRITICAL: Supabase가 자동으로 세션을 생성할 시간을 충분히 줍니다
-        console.log('⏳ Waiting 3 seconds for Supabase to process OAuth session...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
       }
-      
+
       // Supabase 세션 확인
       console.log('🔍 Checking Supabase session...');
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.error("❌ Session check error:", error);
       }
-      
+
       // Supabase 세션이 있으면 우선 처리 (OAuth 로그인)
       if (session) {
         setIsLoggedIn(true);
@@ -327,11 +348,11 @@ useEffect(() => {
         toast.success(`환영합니다, ${userName}님!`);
         return;
       }
-      
+
       // Supabase 세션이 없으면 master 계정 체크
       const isMasterLocal = localStorage.getItem("isMaster") === "true";
       const isLoggedInLocal = localStorage.getItem("isLoggedIn") === "true";
-      
+
       if (isMasterLocal && isLoggedInLocal) {
         setIsLoggedIn(true);
         setIsMaster(true);
@@ -339,7 +360,7 @@ useEffect(() => {
         console.log("✅ Master account logged in");
         return;
       }
-      
+
       console.log("ℹ️ No active session found");
     } catch (error) {
       console.error("❌ Unexpected error in checkSession:", error);
