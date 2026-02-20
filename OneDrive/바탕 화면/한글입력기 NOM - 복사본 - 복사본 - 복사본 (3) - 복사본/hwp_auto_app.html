@@ -1,0 +1,3619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HWP 자동 수식 입력기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-checking {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-ready .status-dot {
+            background: #28a745;
+        }
+
+        .status-error .status-dot {
+            background: #dc3545;
+        }
+
+        .status-checking .status-dot {
+            background: #ffc107;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .equation-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .equation-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+        }
+
+        .rm-btn {
+            padding: 15px 25px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .rm-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .rm-btn:active {
+            transform: translateY(0);
+        }
+
+        .rm-toggle-btn {
+            padding: 8px 16px;
+            background: #e0e0e0;
+            color: #333;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .rm-toggle-btn:hover {
+            background: #d0d0d0;
+            border-color: #999;
+        }
+
+        .rm-toggle-btn.active {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .rm-toggle-btn.active:hover {
+            background: #45a049;
+            border-color: #45a049;
+        }
+
+        .bold-toggle-btn {
+            padding: 8px 16px;
+            background: #e0e0e0;
+            color: #333;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .bold-toggle-btn:hover {
+            background: #d0d0d0;
+            border-color: #999;
+        }
+
+        .bold-toggle-btn.active {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .bold-toggle-btn.active:hover {
+            background: #45a049;
+            border-color: #45a049;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .result-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .examples h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .example-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 2px solid transparent;
+        }
+
+        .example-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+            border-color: #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #4caf50;
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* 특수문자 섹션 */
+        .special-chars {
+            background: #f8fafc;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .special-chars > label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .char-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .char-category {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-label {
+            min-width: 80px;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .char-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .char-btn {
+            padding: 6px 12px;
+            background: white;
+            color: #333;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 40px;
+            font-weight: 500;
+        }
+
+        .char-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        /* 심볼 버튼 */
+        .symbol-buttons {
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .symbol-buttons button {
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .convert-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .clear-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+        }
+
+        .symbol-btn {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .symbol-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            border-left: 4px solid #1976d2;
+        }
+
+        .instructions h3 {
+            color: #1976d2;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #333;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .instructions code {
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .quick-start {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+
+        .quick-start h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .quick-start p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .start-file-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: white;
+            color: #f5576c;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+
+        .start-file-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 글씨 크기 조절 섹션 */
+        .font-size-section {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .font-size-section > label {
+            display: block;
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .font-size-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .font-size-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #0ea5e9;
+            background: white;
+            color: #0ea5e9;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .font-size-btn:hover {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .font-size-input {
+            width: 70px;
+            height: 36px;
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0369a1;
+        }
+
+        .font-size-input:focus {
+            outline: none;
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+        }
+
+        .font-size-presets {
+            display: flex;
+            gap: 5px;
+            margin-left: auto;
+        }
+
+        .preset-btn {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #64748b;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        .preset-btn.active {
+            background: #0ea5e9;
+            color: white;
+            border-color: #0ea5e9;
+        }
+
+        /* 하이브리드 모드 스타일 */
+        .mode-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+        }
+
+        .mode-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .mode-tab:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .mode-tab:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .mode-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .hybrid-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .hybrid-controls button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .hybrid-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .hybrid-controls textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .hybrid-controls textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .segment-preview-area {
+            background: #f8fafc;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        #segmentPreview {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: auto;
+            padding: 4px 0;
+        }
+
+        #segmentPreview::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        #segmentPreview::-webkit-scrollbar-track {
+            background: #e8e8e8;
+            border-radius: 4px;
+        }
+
+        #segmentPreview::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 4px;
+        }
+
+        #segmentPreview::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .segment-preview-area h3 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .segment-preview-area h3 small {
+            color: #999;
+            font-weight: normal;
+            font-size: 12px;
+        }
+
+        .segment {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .segment:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .segment-korean {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .segment-formula {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #90caf9;
+        }
+
+        .segment-segment {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .segment-compound_unit {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffb74d;
+        }
+
+        .segment-newline {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+            font-weight: bold;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        #hybridInsertBtn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #hybridInsertBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        #hybridResult {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 모드 전환 탭 -->
+        <div class="mode-tabs">
+            <div class="mode-tab active" id="tabEquation" onclick="switchMode('equation')">수식 입력</div>
+            <div class="mode-tab" id="tabHybrid" onclick="switchMode('hybrid')">하이브리드 변환</div>
+        </div>
+
+        <!-- 수식 입력 모드 (기존 UI) -->
+        <div id="equationMode">
+        <h1>⚡ HWP 자동 수식 입력기</h1>
+        <p class="subtitle">버튼 한 번으로 HWP에 수식 삽입!</p>
+
+        <div id="statusIndicator" class="status-indicator status-checking">
+            <div class="status-dot"></div>
+            <span id="statusText">서버 연결 확인 중...</span>
+        </div>
+
+        <!-- 글씨 크기 조절 섹션 -->
+        <div class="font-size-section">
+            <label for="fontSizeInput">글씨 크기 (pt)</label>
+            <div class="font-size-controls">
+                <button class="font-size-btn" onclick="adjustFontSize(-1)">−</button>
+                <input type="number" id="fontSizeInput" class="font-size-input" value="11" min="5" max="72" step="0.5">
+                <button class="font-size-btn" onclick="adjustFontSize(1)">+</button>
+                <div class="font-size-presets">
+                    <button class="preset-btn" onclick="setFontSize(9)">9</button>
+                    <button class="preset-btn" onclick="setFontSize(10)">10</button>
+                    <button class="preset-btn active" onclick="setFontSize(11)">11</button>
+                    <button class="preset-btn" onclick="setFontSize(12)">12</button>
+                    <button class="preset-btn" onclick="setFontSize(14)">14</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 특수문자 섹션 -->
+        <div class="special-chars">
+            <label>특수문자</label>
+            <div class="char-categories">
+                <div class="char-category">
+                    <span class="category-label">도형/각도</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('△')">△</button>
+                        <button class="char-btn" onclick="insertChar('□')">□</button>
+                        <button class="char-btn" onclick="insertChar('∠')">∠</button>
+                        <button class="char-btn" onclick="insertChar('°')">°</button>
+                    </div>
+                </div>
+
+                <div class="char-category">
+                    <span class="category-label">연산/관계</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('+')">+</button>
+                        <button class="char-btn" onclick="insertChar('-')">-</button>
+                        <button class="char-btn" onclick="insertChar('×')">×</button>
+                        <button class="char-btn" onclick="insertChar('·')">·</button>
+                        <button class="char-btn" onclick="insertChar('÷')">÷</button>
+                        <button class="char-btn" onclick="insertChar('±')">±</button>
+                        <button class="char-btn" onclick="insertChar('|')">|</button>
+                        <button class="char-btn" onclick="insertChar(',')">,</button>
+                        <button class="char-btn" onclick="insertChar('＜')">＜</button>
+                        <button class="char-btn" onclick="insertChar('＝')">＝</button>
+                        <button class="char-btn" onclick="insertChar('＞')">＞</button>
+                        <button class="char-btn" onclick="insertChar('≤')">≤</button>
+                        <button class="char-btn" onclick="insertChar('≥')">≥</button>
+                        <button class="char-btn" onclick="insertChar('≠')">≠</button>
+                        <button class="char-btn" onclick="insertChar('≒')">≒</button>
+                        <button class="char-btn" onclick="insertChar('≡')">≡</button>
+                        <button class="char-btn" onclick="insertChar('∽')">∽</button>
+                        <button class="char-btn" onclick="insertChar('...')">...</button>
+                        <button class="char-btn" onclick="insertChar('···')">···</button>
+                    </div>
+                </div>
+
+                <div class="char-category">
+                    <span class="category-label">집합</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('∈')">∈</button>
+                        <button class="char-btn" onclick="insertChar('∋')">∋</button>
+                        <button class="char-btn" onclick="insertChar('⊂')">⊂</button>
+                        <button class="char-btn" onclick="insertChar('⊃')">⊃</button>
+                        <button class="char-btn" onclick="insertChar('∪')">∪</button>
+                        <button class="char-btn" onclick="insertChar('∩')">∩</button>
+                    </div>
+                </div>
+
+                <div class="char-category">
+                    <span class="category-label">제곱/거듭제곱</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('²')">²</button>
+                        <button class="char-btn" onclick="insertChar('³')">³</button>
+                        <button class="char-btn" onclick="insertChar('⁴')">⁴</button>
+                    </div>
+                </div>
+
+                <div class="char-category">
+                    <span class="category-label">원문자</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('①')">①</button>
+                        <button class="char-btn" onclick="insertChar('②')">②</button>
+                        <button class="char-btn" onclick="insertChar('③')">③</button>
+                        <button class="char-btn" onclick="insertChar('④')">④</button>
+                        <button class="char-btn" onclick="insertChar('⑤')">⑤</button>
+                    </div>
+                </div>
+
+                <div class="char-category">
+                    <span class="category-label">논리/기타</span>
+                    <div class="char-buttons">
+                        <button class="char-btn" onclick="insertChar('∴')">∴</button>
+                        <button class="char-btn" onclick="insertChar('∵')">∵</button>
+                        <button class="char-btn" onclick="insertChar('∞')">∞</button>
+                        <button class="char-btn" onclick="insertChar('∧')">∧</button>
+                        <button class="char-btn" onclick="insertChar('∨')">∨</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label for="equationInput" style="margin-bottom: 0;">수식 입력</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="boldToggleBtn" class="bold-toggle-btn" onclick="toggleBoldAuto()">
+                        <span id="boldToggleText">Bold: OFF</span>
+                    </button>
+                    <button id="rmToggleBtn" class="rm-toggle-btn" onclick="toggleRMAuto()">
+                        <span id="rmToggleText">RM: OFF</span>
+                    </button>
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="equationInput"
+                        class="equation-input"
+                        placeholder="예: a/b 또는 x^2 + y^2 = r^2"
+                        value="">
+                </div>
+                <button id="rmBtn" class="rm-btn">RM 추가</button>
+            </div>
+        </div>
+
+        <!-- 변환 및 초기화 버튼 -->
+        <div class="button-row" style="margin-bottom: 15px;">
+            <button onclick="convertFormula()" class="convert-btn">🔄 수식 변환</button>
+            <button onclick="convertSpacesToBackticks()" class="convert-btn">⌨️ 띄어쓰기 인식</button>
+            <button onclick="removeSpacesInSelection(equationInput)" class="convert-btn" title="선택 영역 또는 전체에서 공백/백틱 제거">✂️ 띄어쓰기 없애기</button>
+            <button onclick="convertAllToBar()" class="convert-btn">📏 선분으로 모두 바꾸기</button>
+            <button onclick="clearInput()" class="clear-btn">🗑️ 초기화</button>
+        </div>
+
+        <!-- 심볼 버튼 (선택 시 표시) -->
+        <div id="symbolButtons" class="symbol-buttons button-row">
+            <button id="sqrtBtn" onclick="applySymbol('sqrt')" class="symbol-btn">√ 루트</button>
+            <button id="boldBtn" onclick="applySymbol('bold')" class="symbol-btn">B 굵게</button>
+            <button id="barBtn" onclick="applySymbol('bar')" class="symbol-btn">📏 선분</button>
+            <button id="archBtn" onclick="applySymbol('arch')" class="symbol-btn">⌒ 호</button>
+            <button id="angleBtn" onclick="applySymbol('angle')" class="symbol-btn">∠ 각</button>
+        </div>
+
+        <button id="generateBtn" class="generate-btn" disabled>
+            🚀 HWP에 수식 삽입
+        </button>
+
+        <div id="resultBox" class="result-box"></div>
+
+        <div class="quick-start" id="quickStartBox" style="display: none;">
+            <h3>⚡ 빠른 시작</h3>
+            <p>서버가 연결되지 않았습니다.<br>아래 파일을 더블클릭하여 서버를 시작하세요!</p>
+            <button class="start-file-btn" onclick="showStartInstructions()">
+                🚀 HWP수식입력기_시작.bat
+            </button>
+            <p style="font-size: 12px; margin-top: 15px; opacity: 0.9;">
+                (이 파일을 실행하면 서버와 브라우저가 자동으로 열립니다)
+            </p>
+        </div>
+
+        <div class="instructions">
+            <h3>📌 사용 방법</h3>
+            <ol>
+                <li><strong>서버 시작:</strong> <code>HWP수식입력기_시작.bat</code> 파일을 더블클릭하세요</li>
+                <li><strong>수식 입력:</strong> 위 입력창에 원하는 수식을 입력하세요</li>
+                <li><strong>자동 삽입:</strong> 버튼을 클릭하면 자동으로 HWP에 삽입됩니다!</li>
+            </ol>
+        </div>
+
+        <div class="examples">
+            <h3>💡 수식 예제 (클릭하여 입력)</h3>
+            <div class="example-item" data-equation="a/b">a/b<span class="badge">분수</span></div>
+            <div class="example-item" data-equation="x^2 + y^2 = r^2">x^2 + y^2 = r^2<span class="badge">피타고라스</span></div>
+            <div class="example-item" data-equation="(x+1)/(y-2)">(x+1)/(y-2)<span class="badge">복잡한 분수</span></div>
+            <div class="example-item" data-equation="2*3">2*3<span class="badge">곱셈</span></div>
+            <div class="example-item" data-equation="sqrt {x}">sqrt {x}<span class="badge">제곱근</span></div>
+            <div class="example-item" data-equation="bar {AB}">bar {AB}<span class="badge">선분</span></div>
+            <div class="example-item" data-equation="arch {AB}">arch {AB}<span class="badge">호</span></div>
+            <div class="example-item" data-equation="△ABC">△ABC<span class="badge">삼각형</span></div>
+        </div>
+        </div><!-- /equationMode -->
+
+        <!-- 하이브리드 변환 모드 -->
+        <div id="hybridMode" style="display:none;">
+            <h1>⚡ 하이브리드 변환</h1>
+            <p class="subtitle">텍스트를 자동으로 한글/수식/선분으로 분류하여 HWP에 삽입!</p>
+
+            <div id="hybridStatusIndicator" class="status-indicator status-checking">
+                <div class="status-dot"></div>
+                <span id="hybridStatusText">서버 연결 확인 중...</span>
+            </div>
+
+            <div class="hybrid-controls">
+                <button id="readFromHwpBtn">📄 HWP에서 텍스트 읽기</button>
+                <textarea id="sourceText" rows="6" placeholder="또는 여기에 텍스트를 직접 붙여넣기..."></textarea>
+                <button id="tokenizeBtn">🔍 토큰화</button>
+                <button id="hybridRemoveSpacesBtn" onclick="removeSpacesInSelection(document.getElementById('sourceText'))" title="선택 영역 또는 전체 텍스트에서 공백/백틱 제거">✂️ 띄어쓰기 없애기</button>
+            </div>
+
+            <div class="segment-preview-area">
+                <h3>세그먼트 미리보기 <small>(클릭하여 유형 변경)</small></h3>
+                <div id="segmentPreview"></div>
+                <div class="legend">
+                    <span class="legend-item"><span class="legend-color" style="background:#f0f0f0"></span> 한글</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#e3f2fd"></span> 수식</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#e8f5e9"></span> 선분</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#fff3e0"></span> 복합단위</span>
+                </div>
+            </div>
+
+            <button id="hybridInsertBtn">🚀 일괄 변환 실행</button>
+            <div id="hybridResult" class="result-box"></div>
+        </div><!-- /hybridMode -->
+    </div>
+
+    <script>
+        // 여러 포트를 시도하여 서버 찾기
+        const POSSIBLE_PORTS = [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010];
+        let SERVER_URL = 'http://localhost:5001';
+        let actualPort = 5001;
+
+        const equationInput = document.getElementById('equationInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const rmBtn = document.getElementById('rmBtn');
+        const resultBox = document.getElementById('resultBox');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const quickStartBox = document.getElementById('quickStartBox');
+        const exampleItems = document.querySelectorAll('.example-item');
+        const fontSizeInput = document.getElementById('fontSizeInput');
+
+        let serverReady = false;
+
+        // 글씨 크기 조절 함수
+        function adjustFontSize(delta) {
+            let currentSize = parseFloat(fontSizeInput.value) || 11;
+            let newSize = currentSize + delta;
+            newSize = Math.max(5, Math.min(72, newSize));
+            fontSizeInput.value = newSize;
+            updatePresetButtons(newSize);
+        }
+
+        function setFontSize(size) {
+            fontSizeInput.value = size;
+            updatePresetButtons(size);
+        }
+
+        function updatePresetButtons(size) {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseFloat(btn.textContent) === size) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // 글씨 크기 입력 변경 시 프리셋 버튼 업데이트
+        fontSizeInput.addEventListener('change', function() {
+            let size = parseFloat(this.value) || 11;
+            size = Math.max(5, Math.min(72, size));
+            this.value = size;
+            updatePresetButtons(size);
+        });
+
+        // Undo/Redo 기능을 위한 변수
+        let history = [''];
+        let historyStep = 0;
+
+        // 선분/호/각 버튼 표시 로직
+        let selectedText = '';
+        let selectionStart = 0;
+        let selectionEnd = 0;
+
+        // RM 자동 활성화 상태
+        let rmAutoEnabled = false;
+        const rmToggleBtn = document.getElementById('rmToggleBtn');
+        const rmToggleText = document.getElementById('rmToggleText');
+
+        // Bold 자동 활성화 상태
+        let boldAutoEnabled = false;
+        const boldToggleBtn = document.getElementById('boldToggleBtn');
+        const boldToggleText = document.getElementById('boldToggleText');
+
+        // 시작 파일 안내 표시
+        function showStartInstructions() {
+            alert('폴더에서 "HWP수식입력기_시작.bat" 파일을 찾아서 더블클릭하세요.\n\n파일 위치: ' + window.location.pathname.replace('hwp_auto_app.html', 'HWP수식입력기_시작.bat'));
+        }
+
+        // 서버 상태 확인 (여러 포트 자동 탐색)
+        async function checkServerStatus() {
+            // 현재 연결된 포트 먼저 시도
+            try {
+                const response = await fetch(`${SERVER_URL}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    serverReady = true;
+                    actualPort = data.port || actualPort;
+                    SERVER_URL = `http://localhost:${actualPort}`;
+                    statusIndicator.className = 'status-indicator status-ready';
+                    statusText.textContent = `✅ 서버 연결됨 (포트: ${actualPort})`;
+                    generateBtn.disabled = false;
+                    quickStartBox.style.display = 'none';
+                    return true;
+                }
+            } catch (error) {
+                // 현재 포트 실패 시 다른 포트 시도
+            }
+
+            // 모든 가능한 포트 순회
+            for (const port of POSSIBLE_PORTS) {
+                try {
+                    const testUrl = `http://localhost:${port}/status`;
+                    const response = await fetch(testUrl);
+                    if (response.ok) {
+                        const data = await response.json();
+                        serverReady = true;
+                        actualPort = port;
+                        SERVER_URL = `http://localhost:${port}`;
+                        statusIndicator.className = 'status-indicator status-ready';
+                        statusText.textContent = `✅ 서버 연결됨 (포트: ${actualPort})`;
+                        generateBtn.disabled = false;
+                        quickStartBox.style.display = 'none';
+                        return true;
+                    }
+                } catch (error) {
+                    // 다음 포트 시도
+                    continue;
+                }
+            }
+
+            // 모든 포트 실패
+            serverReady = false;
+            statusIndicator.className = 'status-indicator status-error';
+            statusText.textContent = '❌ 서버 미연결 - 시작 파일을 실행해주세요';
+            generateBtn.disabled = true;
+            quickStartBox.style.display = 'block';
+            return false;
+        }
+
+        // 예제 클릭
+        exampleItems.forEach(item => {
+            item.addEventListener('click', function() {
+                equationInput.value = this.dataset.equation;
+                
+                // Bold 자동 활성화가 켜져있으면 bold{} 유지
+                if (boldAutoEnabled) {
+                    ensureBold();
+                }
+                
+                // RM 자동 활성화가 켜져있으면 RM 유지
+                if (rmAutoEnabled) {
+                    ensureRM();
+                }
+                
+                equationInput.focus();
+            });
+        });
+
+        // 수식 삽입
+        async function insertEquation() {
+            const equation = equationInput.value.trim();
+            const fontSize = parseFloat(fontSizeInput.value) || 11;
+
+            if (!equation) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            if (!serverReady) {
+                showResult('서버가 연결되지 않았습니다. hwp_server.py를 먼저 실행해주세요.', 'error');
+                return;
+            }
+
+            // 버튼 비활성화
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="loading-spinner"></span>수식 삽입 중...';
+
+            try {
+                const response = await fetch(`${SERVER_URL}/insert`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ equation: equation, fontSize: fontSize })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showResult(`✅ 성공! "${equation}" 수식이 HWP에 삽입되었습니다.`, 'success');
+                } else {
+                    showResult(`❌ 오류: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 연결 오류: ${error.message}`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '🚀 HWP에 수식 삽입';
+            }
+        }
+
+        // 결과 표시
+        function showResult(message, type) {
+            resultBox.className = `result-box show result-${type}`;
+            resultBox.textContent = message;
+        }
+
+        // 빠른 삽입 함수 - Ctrl+Q로 실행
+        async function executeQuickInsert() {
+            const currentValue = equationInput.value.trim();
+            if (!currentValue) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            // 1. 띄어쓰기 인식
+            convertSpacesToBackticks();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 2. 선분으로 모두 바꾸기
+            convertAllToBar();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 3. 수식 변환
+            convertFormula();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 4. RM 추가
+            addRM();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 5. 맨 마지막에 백틱 추가
+            const finalValue = equationInput.value.trim();
+            if (!equationInput.value.endsWith('`')) {
+                equationInput.value = finalValue + '`';
+            }
+            
+            // 6. HWP에 수식 삽입
+            await insertEquation();
+        }
+
+        // 빠른 삽입 함수 (RM 추가 제외) - Ctrl+X로 실행
+        async function executeQuickInsertWithoutRM() {
+            const currentValue = equationInput.value.trim();
+            if (!currentValue) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            // 1. 띄어쓰기 인식
+            convertSpacesToBackticks();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 2. 선분으로 모두 바꾸기
+            convertAllToBar();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 3. 수식 변환
+            convertFormula();
+            
+            // UI 업데이트를 위한 짧은 지연
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // 4. RM 추가 (제외)
+            
+            // 5. 맨 마지막에 백틱 추가
+            const finalValue = equationInput.value.trim();
+            if (!equationInput.value.endsWith('`')) {
+                equationInput.value = finalValue + '`';
+            }
+            
+            // 6. HWP에 수식 삽입
+            await insertEquation();
+        }
+
+        // RM 추가 함수
+        function addRM() {
+            const currentValue = equationInput.value.trim();
+
+            // 이미 RM으로 시작하면 추가하지 않음
+            if (currentValue.toUpperCase().startsWith('RM')) {
+                equationInput.focus();
+                return;
+            }
+
+            // 값이 있으면 앞에 RM 추가, 없으면 RM만 추가
+            if (currentValue) {
+                equationInput.value = 'RM' + currentValue;
+            } else {
+                equationInput.value = 'RM';
+            }
+
+            // 커서를 맨 뒤로 이동
+            equationInput.focus();
+            equationInput.setSelectionRange(equationInput.value.length, equationInput.value.length);
+        }
+
+        // RM 자동 활성화 토글
+        function toggleRMAuto() {
+            rmAutoEnabled = !rmAutoEnabled;
+            
+            if (rmAutoEnabled) {
+                rmToggleBtn.classList.add('active');
+                rmToggleText.textContent = 'RM: ON';
+                // 현재 값에 RM이 없으면 추가
+                ensureRM();
+            } else {
+                rmToggleBtn.classList.remove('active');
+                rmToggleText.textContent = 'RM: OFF';
+            }
+        }
+
+        // RM이 맨 앞에 있는지 확인하고 없으면 추가
+        function ensureRM() {
+            if (!rmAutoEnabled) return;
+            
+            const currentValue = equationInput.value;
+            const cursorPos = equationInput.selectionStart;
+            
+            // 이미 RM으로 시작하면 그대로 유지
+            if (currentValue.toUpperCase().startsWith('RM')) {
+                return;
+            }
+            
+            // RM이 없으면 추가
+            equationInput.value = 'RM' + currentValue;
+            
+            // 커서 위치 조정 (RM이 추가되었으므로 +2)
+            const newCursorPos = Math.min(cursorPos + 2, equationInput.value.length);
+            equationInput.setSelectionRange(newCursorPos, newCursorPos);
+        }
+
+        // Bold 자동 활성화 토글
+        function toggleBoldAuto() {
+            boldAutoEnabled = !boldAutoEnabled;
+            
+            if (boldAutoEnabled) {
+                boldToggleBtn.classList.add('active');
+                boldToggleText.textContent = 'Bold: ON';
+                // 현재 값이 bold{}로 감싸져 있지 않으면 감싸기
+                ensureBold();
+            } else {
+                boldToggleBtn.classList.remove('active');
+                boldToggleText.textContent = 'Bold: OFF';
+            }
+        }
+
+        // 입력되는 모든 텍스트를 bold{}로 감싸기
+        // 중괄호 깊이(depth) 기반으로 정확하게 처리
+        function ensureBold() {
+            if (!boldAutoEnabled) return;
+
+            const currentValue = equationInput.value;
+            const cursorPos = equationInput.selectionStart;
+            const trimmed = currentValue.trim();
+
+            // 빈 값이면 'bold {' 만 세팅
+            if (trimmed === '') {
+                equationInput.value = 'bold {';
+                equationInput.setSelectionRange(7, 7);
+                return;
+            }
+
+            // ── bold { 로 시작하는 경우 ──
+            const prefixMatch = trimmed.match(/^bold\s*\{/);
+            if (prefixMatch) {
+                const oldPrefixLen = prefixMatch[0].length;
+                const openIdx = oldPrefixLen - 1; // '{' 위치
+
+                // 매칭되는 '}' 찾기 (중괄호 깊이 추적)
+                let depth = 0, closeIdx = -1;
+                for (let i = openIdx; i < trimmed.length; i++) {
+                    if (trimmed[i] === '{') depth++;
+                    else if (trimmed[i] === '}') depth--;
+                    if (depth === 0) { closeIdx = i; break; }
+                }
+
+                // 이미 올바르게 감싸져 있으면 그대로 유지
+                if (closeIdx === trimmed.length - 1) {
+                    return;
+                }
+
+                // '}' 뒤에 텍스트가 빠져나간 경우 → 안으로 넣기
+                if (closeIdx >= 0) {
+                    const inside = trimmed.slice(oldPrefixLen, closeIdx);
+                    let leaked = trimmed.slice(closeIdx + 1);
+                    // 짝 없는 '}' 잔여물 제거
+                    let lo = 0, lc = 0;
+                    for (const ch of leaked) { if (ch === '{') lo++; else if (ch === '}') lc++; }
+                    while (lc > lo && leaked.endsWith('}')) { leaked = leaked.slice(0, -1); lc--; }
+                    const newValue = 'bold {' + inside + leaked + '}';
+                    equationInput.value = newValue;
+
+                    // 커서 위치 조정
+                    const newPrefixLen = 'bold {'.length;
+                    let newCursorPos = cursorPos - oldPrefixLen + newPrefixLen;
+                    // '}' 뒤에서 타이핑한 경우: 제거된 '}' 1글자만큼 보정
+                    if (cursorPos > closeIdx) {
+                        newCursorPos = newPrefixLen + (closeIdx - oldPrefixLen) + (cursorPos - closeIdx - 1);
+                    }
+                    newCursorPos = Math.max(newPrefixLen, Math.min(newCursorPos, newValue.length - 1));
+                    equationInput.setSelectionRange(newCursorPos, newCursorPos);
+                    return;
+                }
+
+                // 매칭되는 '}'가 없으면 끝에 추가
+                equationInput.value = trimmed + '}';
+                equationInput.setSelectionRange(cursorPos, cursorPos);
+                return;
+            }
+
+            // ── bold { 로 시작하지 않는 경우 ──
+            let content = trimmed;
+
+            // 내부에 기존 bold { } 래퍼가 있으면 제거 후 내용만 추출
+            const innerBoldIdx = content.indexOf('bold {');
+            if (innerBoldIdx >= 0) {
+                const before = content.slice(0, innerBoldIdx);
+                const afterPrefix = content.slice(innerBoldIdx + 'bold {'.length);
+                // bold { 에 대응하는 } 찾기
+                let depth = 0, closeIdx = -1;
+                for (let i = 0; i < afterPrefix.length; i++) {
+                    if (afterPrefix[i] === '{') depth++;
+                    else if (afterPrefix[i] === '}') {
+                        if (depth === 0) { closeIdx = i; break; }
+                        depth--;
+                    }
+                }
+                if (closeIdx >= 0) {
+                    content = before + afterPrefix.slice(0, closeIdx) + afterPrefix.slice(closeIdx + 1);
+                } else {
+                    content = before + afterPrefix;
+                }
+            }
+
+            const newValue = 'bold {' + content + '}';
+            equationInput.value = newValue;
+            const newCursorPos = Math.max('bold {'.length, Math.min(cursorPos + 'bold {'.length, newValue.length - 1));
+            equationInput.setSelectionRange(newCursorPos, newCursorPos);
+        }
+
+        // 이벤트 리스너
+        generateBtn.addEventListener('click', insertEquation);
+        rmBtn.addEventListener('click', addRM);
+
+        equationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                insertEquation();
+            }
+        });
+
+        // 외부 괄호 제거 함수
+        function removeOuterParentheses(str) {
+            str = str.trim();
+            if (str.startsWith('(') && str.endsWith(')')) {
+                let depth = 0;
+                let valid = true;
+                for (let i = 0; i < str.length - 1; i++) {
+                    if (str[i] === '(') depth++;
+                    if (str[i] === ')') depth--;
+                    if (depth === 0) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid && depth === 1) {
+                    str = str.substring(1, str.length - 1);
+                }
+            }
+            return str;
+        }
+
+        // 괄호 유지 여부 판단 함수 (괄호 안에 연산자가 있으면 유지)
+        function shouldKeepParentheses(str) {
+            str = str.trim();
+            if (!str.startsWith('(') || !str.endsWith(')')) {
+                return false;
+            }
+            // 괄호 안의 내용 추출
+            let depth = 0;
+            let valid = true;
+            for (let i = 0; i < str.length - 1; i++) {
+                if (str[i] === '(') depth++;
+                if (str[i] === ')') depth--;
+                if (depth === 0) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (!valid || depth !== 1) {
+                return false;
+            }
+            // 괄호 안의 내용에 연산자가 있는지 확인
+            let inner = str.substring(1, str.length - 1);
+            // +, - 연산자 검사 (단, 괄호 안의 것은 제외)
+            let parenDepth = 0;
+            for (let i = 0; i < inner.length; i++) {
+                if (inner[i] === '(') parenDepth++;
+                if (inner[i] === ')') parenDepth--;
+                if (parenDepth === 0) {
+                    // 첫 번째 문자가 아닌 +/- 또는 * 연산자가 있으면 괄호 유지
+                    if ((inner[i] === '+' || inner[i] === '*') ||
+                        (inner[i] === '-' && i > 0 && /[0-9a-zA-Z)]/.test(inner[i-1]))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 2글자 대문자 쌍(선분)에 rmbar {} 적용
+        function applyBarToUpperPairs(text) {
+            var units = ['cm','mm','km','kg','mg','ml','hr','hz','ft','yd','lb','oz','cc','in','deg','rad','sec','min'];
+            return text.replace(/\b([A-Z]{2})\b/g, function(match, p1, offset, string) {
+                if (units.indexOf(match.toLowerCase()) >= 0 || match === 'AA') return match;
+                var before = string.substring(Math.max(0, offset - 10), offset);
+                if (/bar\s*\{[^}]*$/.test(before)) return match;
+                return 'rmbar {' + match + '}';
+            });
+        }
+
+        // 괄호로 감싸진 분수 변환 함수
+        function convertParenthesizedFraction(input) {
+            let result = '';
+            let i = 0;
+
+            while (i < input.length) {
+                // 괄호로 시작하는 분자 찾기
+                if (input[i] === '(') {
+                    let depth = 0;
+                    let start = i;
+
+                    // 분자의 닫는 괄호 찾기
+                    while (i < input.length) {
+                        if (input[i] === '(') depth++;
+                        if (input[i] === ')') depth--;
+                        i++;
+                        if (depth === 0) break;
+                    }
+
+                    let numerator = input.substring(start, i);
+
+                    // ) 뒤의 공백/백틱 건너뛰기 (예: (3-0) / (0-2) 에서 )와 / 사이)
+                    while (i < input.length && (input[i] === '`' || input[i] === ' ')) i++;
+
+                    // 바로 뒤에 /가 오는지 확인 ((expr)/denom 패턴 - 분자에 연산자 포함해도 변환)
+                    // 예: (2x+1)/3 → {(2x+1)} over {3}, (3-0)/(0-2) → {(3-0)} over {(0-2)}
+                    if (i < input.length && input[i] === '/') {
+                        // // 패턴인 경우 분수 변환하지 않음
+                        if (i + 1 < input.length && input[i + 1] === '/') {
+                            result += numerator;
+                            i++; // 첫 번째 / 건너뛰기
+                            continue;
+                        }
+                        i++; // / 건너뛰기
+
+                        // / 뒤의 공백/백틱 건너뛰기 (예: (3-0) / (0-2) 에서 /와 ( 사이)
+                        while (i < input.length && (input[i] === '`' || input[i] === ' ')) i++;
+
+                        // 분모가 괄호로 시작하는지 확인
+                        if (i < input.length && input[i] === '(') {
+                            depth = 0;
+                            start = i;
+
+                            while (i < input.length) {
+                                if (input[i] === '(') depth++;
+                                if (input[i] === ')') depth--;
+                                i++;
+                                if (depth === 0) break;
+                            }
+
+                            let denominator = input.substring(start, i);
+                            let numInner = removeOuterParentheses(numerator);
+                            let denInner = removeOuterParentheses(denominator);
+                            
+                            // 분모에 위첨자(^숫자)가 있는지 확인
+                            const superscriptPattern = /\^(\d+)$/;
+                            const denomMatch = denominator.match(superscriptPattern);
+                            
+                            if (denomMatch) {
+                                const denomWithoutSup = denInner.replace(superscriptPattern, '');
+                                const superscript = denomMatch[1];
+                                result += 'LEFT ( {' + applyBarToUpperPairs(numInner) + '} over {' + applyBarToUpperPairs(denomWithoutSup) + '} RIGHT ) ^{' + superscript + '}';
+                            } else {
+                                // (expr)/(expr) → {(expr)} over {(expr)} 형식
+                                result += '{' + applyBarToUpperPairs(numInner) + '} over {' + applyBarToUpperPairs(denInner) + '}';
+                            }
+                        } else {
+                            // 분모가 괄호로 시작하지 않으면 공백 전까지
+                            // // 패턴인 경우 분수 변환하지 않음
+                            if (i < input.length && input[i] === '/') {
+                                result += numerator + '/';
+                                i++; // 두 번째 / 건너뛰기
+                                continue;
+                            }
+                            start = i;
+                            // 연산자(+, -, *)가 나오기 전까지 읽기
+                            while (i < input.length && !/\s/.test(input[i]) && !/[+\-*]/.test(input[i])) {
+                                i++;
+                            }
+                            let denominator = input.substring(start, i);
+                            
+                            // 분모에 연산자가 포함되어 있으면 분수로 인식하지 않음
+                            if (/[+\-*]/.test(denominator) || (i < input.length && /[+\-*]/.test(input[i]))) {
+                                result += numerator;
+                                i = start; // 분모 읽기 전 위치로 되돌림
+                                continue;
+                            }
+                            
+                            let numInner = removeOuterParentheses(numerator);
+                            // 분모에 위첨자(^숫자)가 있는지 확인
+                            const superscriptPattern = /\^(\d+)$/;
+                            const denomMatch = denominator.match(superscriptPattern);
+                            
+                            if (denomMatch) {
+                                const denomWithoutSup = denominator.replace(superscriptPattern, '');
+                                const superscript = denomMatch[1];
+                                result += '{' + applyBarToUpperPairs(numInner) + '} over {' + applyBarToUpperPairs(denomWithoutSup) + '}^{' + superscript + '}';
+                            } else {
+                                // (expr)/num → {(expr)} over {num} 형식 (예: (2x+1)/3 → {(2x+1)} over {3})
+                                result += '{' + applyBarToUpperPairs(numInner) + '} over {' + applyBarToUpperPairs(denominator) + '}';
+                            }
+                        }
+                    } else {
+                        result += numerator;
+                    }
+                } else {
+                    result += input[i];
+                    i++;
+                }
+            }
+
+            return result;
+        }
+
+        // 수식 변환 함수
+        function convertToCustomFormat(input) {
+            let result = input;
+            // 강조표시 ** → * 정규화 (이후 * → TIMES 변환과 통일)
+            result = result.replace(/\*\*/g, '*');
+            // 함수 표기: f( 또는 f ( 또는 f`( → f`( (f, g, h 등 단일 문자 뒤 괄호 앞에 백틱 추가)
+            // \s와 ` 모두 매칭하여 공백/백틱이 있으면 유지, 없으면 추가
+            result = result.replace(/([a-z])(?:\s|`)*\(/g, '$1`(');
+            // 분수 음수 포맷: -6/-6 → { - 6} over { - 6},  - 6/-6 → - {6} over { - 6}
+            function formatNumForOver(n) {
+                var t = n.replace(/`/g, '').trim();
+                if (/^-\s+/.test(t)) return { prefix: '- ', body: '{' + t.replace(/^-\s+/, '').trim() + '}' };
+                if (/^-[^\s]/.test(t)) return { prefix: '', body: '{ - ' + t.slice(1).trim() + '}' };
+                if (/^\+/.test(t)) return { prefix: '', body: '{' + t.replace(/^\+/, '').trim() + '}' };
+                return { prefix: '', body: '{' + t + '}' };
+            }
+            function formatDenForOver(n) {
+                var t = n.replace(/`/g, '').trim();
+                if (/^-\s*/.test(t)) return '{ - ' + t.replace(/^-\s*/, '').trim() + '}';
+                if (/^\+/.test(t)) return '{' + t.replace(/^\+/, '').trim() + '}';
+                return '{' + t + '}';
+            }
+            // num/(expr) 변환: 10/(k-1) → {10} over {k - 1} (분모가 괄호 안 식일 때)
+            function convertNumOverParenExpr(str) {
+                var out = '';
+                var i = 0;
+                while (i < str.length) {
+                    var m = str.slice(i).match(/^([^\s`{(\/][^\s`{(=><≤≥≠≒≡]*)[\s`]*\/[\s`]*\(/);
+                    if (m) {
+                        var num = m[1].replace(/`/g, '').trim();
+                        var skip = m[0].length;
+                        var j = i + skip;
+                        var depth = 1;
+                        while (j < str.length && depth > 0) {
+                            if (str[j] === '(') depth++;
+                            else if (str[j] === ')') depth--;
+                            j++;
+                        }
+                        if (depth === 0) {
+                            var inner = str.substring(i + skip, j - 1).replace(/`/g, ' ').replace(/\s*([+\-])\s*/g, ' $1 ').replace(/\s+/g, ' ').trim();
+                            var fn = formatNumForOver(num);
+                            out += (fn.prefix ? fn.prefix : '') + fn.body + ' over {' + inner + '}';
+                            i = j;
+                            continue;
+                        }
+                    }
+                    out += str[i];
+                    i++;
+                }
+                return out;
+            }
+
+            // 유니코드 마이너스/하이픈 → ASCII 하이픈-마이너스 (후속 정규식 호환)
+            result = result.replace(/\u2212/g, '-');  // U+2212 MINUS SIGN
+            result = result.replace(/\u2010/g, '-');  // U+2010 HYPHEN
+            result = result.replace(/\uFF0D/g, '-');  // U+FF0D FULLWIDTH HYPHEN-MINUS (－) → -
+
+            // 전각 플러스(＋)를 반각 플러스(+)로 변환
+            result = result.replace(/\uFF0B/g, '+');  // U+FF0B FULLWIDTH PLUS SIGN (＋) → +
+
+            // 샵을 각도 기호로 변환
+            result = result.replace(/#/g, '∠');
+            
+            // 도 기호(°)를 DEG로 변환 (예: 32° → 32 DEG)
+            result = result.replace(/°/g, ' DEG ');
+            // 섭씨(℃)·화씨(℉) 기호 변환 (예: 36℃ → 36 DEG C, 100℉ → 100 DEG F)
+            result = result.replace(/\u2103/g, ' DEG C ');
+            result = result.replace(/\u2109/g, ' DEG F ');
+            
+            // 전각 등호(＝)를 반각 등호(=)로 변환
+            result = result.replace(/＝/g, '=');  // U+FF1D FULLWIDTH EQUALS SIGN → U+003D EQUALS SIGN
+            
+            // 전각 부등호(＜, ＞)를 반각 부등호(<, >)로 변환
+            result = result.replace(/＜/g, '<');  // U+FF1C FULLWIDTH LESS-THAN SIGN → U+003C LESS-THAN SIGN
+            result = result.replace(/＞/g, '>');  // U+FF1E FULLWIDTH GREATER-THAN SIGN → U+003E GREATER-THAN SIGN
+            
+            // 특수 수학 기호는 그대로 유지하되, 주변 공백 처리는 나중에 수행
+            // ≤ (U+2264), ≥ (U+2265), ≠ (U+2260), ≒ (U+2252), ≡ (U+2261) 등은 이미 수학 기호이므로 변환 불필요
+            
+            // 평행선 기호(∥)를 백틱으로 감싼 이중 슬래시로 변환
+            result = result.replace(/∥/g, '`//`');  // U+2225 PARALLEL TO → `//`
+            
+            // 이중 슬래시(//)를 백틱으로 감싼 형태로 변환
+            result = result.replace(/\/\//g, '`//`');
+
+            // ellipsis를 cdots로 변환 (특수문자 먼저 변환)
+            result = result.replace(/…/g, 'cdots');  // U+2026 HORIZONTAL ELLIPSIS
+            result = result.replace(/···/g, 'cdots');  // U+00B7 x 3 MIDDLE DOT x 3
+            // 일반 점 3개를 cdots로 변환
+            result = result.replace(/\.\.\./g, 'cdots');
+
+            // 제곱센티미터 기호(㎠)를 cm^2로 변환
+            result = result.replace(/\u33a0/g, 'cm^2');  // U+33A0 SQUARE CM
+
+            // THEREFORE/BECAUSE 기호 변환
+            result = result.replace(/∴/g, '~THEREFORE``');  // U+2234 THEREFORE
+            result = result.replace(/∵/g, '~BECAUSE~');   // U+2235 BECAUSE
+
+            // 닮음 기호 변환
+            result = result.replace(/∽/g, '~∽~');  // U+223D SIMILAR TO
+
+            // 위첨자 문자를 ^숫자 형식으로 변환 (먼저 처리 - cm² 같은 패턴을 처리하기 위해)
+            const superscriptMap = {
+                '²': '^2', '³': '^3', '⁴': '^4', '⁵': '^5',
+                '⁶': '^6', '⁷': '^7', '⁸': '^8', '⁹': '^9',
+                '¹': '^1', '⁰': '^0'
+            };
+            
+            // 위첨자 문자를 ^숫자로 변환
+            for (const [sup, replacement] of Object.entries(superscriptMap)) {
+                result = result.replace(new RegExp(sup, 'g'), replacement);
+            }
+
+            // 아래첨자 문자를 _숫자 형식으로 변환 (예: S₁ → S_1)
+            const subscriptMap = {
+                '₀': '_0', '₁': '_1', '₂': '_2', '₃': '_3', '₄': '_4',
+                '₅': '_5', '₆': '_6', '₇': '_7', '₈': '_8', '₉': '_9'
+            };
+            
+            // 아래첨자 문자를 _숫자로 변환
+            for (const [sub, replacement] of Object.entries(subscriptMap)) {
+                result = result.replace(new RegExp(sub, 'g'), replacement);
+            }
+
+            // 연속된 아래첨자 사이에 공백 추가 (예: BC_3D_3 → BC_3 D_3)
+            // 패턴: _숫자 + 알파벳 + _숫자 → _숫자 + 공백 + 알파벳 + _숫자
+            result = result.replace(/(_\d+)([A-Za-z])(_\d+)/g, '$1 $2$3');
+
+            // 모든 단위 변환: rm 접두사(로마체) 추가, 숫자와 단위 사이에 백틱(`) 추가
+            // DEG 명령어 보호 (° → DEG 변환 결과가 단위 변환에 의해 rmdeg로 바뀌는 것 방지)
+            result = result.replace(/\bDEG\b/g, '__PROTECTED_DEG__');
+            // 마커를 사용하여 이미 변환된 단위가 재매칭되는 것을 방지
+            const RM = '__RM_UNIT__';
+            // 긴 단위부터 매칭하여 cm이 m보다 먼저 매칭되도록 정렬
+            const allUnits = ['sec','min','deg','rad','cm','mm','km','in','ft','yd','kg','mg','lb','oz','ml','cc','hr','hz','m','g','l','v','a','w'];
+            const multiUnits = allUnits.filter(u => u.length >= 2);
+            const unitPattern = allUnits.join('|');
+            const multiUnitPattern = multiUnits.join('|');
+
+            // 1a) 숫자+unit^N (예: 6cm^2 → 6`rmcm ^2)
+            result = result.replace(new RegExp('(\\d+(?:\\.\\d+)?)(' + unitPattern + ')\\^(\\d+)', 'gi'),
+                function(match, num, u, n) {
+                    if (u.length === 1 && u === u.toLowerCase()) return match;
+                    var uc = (u === 'L') ? 'L' : u.toLowerCase();
+                    return num + '`' + RM + uc + ' ^' + n + ' ';
+                });
+
+            // 1b) 문자+multi_unit^N (예: xcm^2 → x`rmcm ^2)
+            // 대문자 단위(예: ABCM의 CM)는 기하 기호이므로 변환 제외
+            result = result.replace(new RegExp('([a-zA-Z])(' + multiUnitPattern + ')\\^(\\d+)', 'gi'),
+                (match, ch, u, n) => (u.length >= 2 && u !== u.toLowerCase()) ? match : (ch + '`' + RM + u.toLowerCase() + ' ^' + n + ' '));
+
+            // 1c) standalone unit^N (예: cm^2 → rmcm ^2)
+            // 단독 대문자 L(점 이름 등)은 리터로 오인하지 않도록 제외
+            result = result.replace(new RegExp('(' + unitPattern + ')\\^(\\d+)', 'gi'),
+                function(match, u, n) {
+                    if (u.length === 1 && u === u.toLowerCase()) return match;
+                    if (u.length === 1 && u === 'L') return match;
+                    return RM + u.toLowerCase() + ' ^' + n + ' ';
+                });
+
+            // 2) 숫자+unit (예: 6cm → 6`rmcm, 10kg → 10`rmkg)
+            // 단일 소문자는 변수로 간주하여 rm 변환 제외 (2a → 2a)
+            // L(리터)는 대문자 유지: 10L → 10`rmL
+            result = result.replace(new RegExp('(\\d+(?:\\.\\d+)?)(' + unitPattern + ')\\b', 'gi'),
+                function(match, num, u) {
+                    if (u.length === 1 && u === u.toLowerCase()) return match;
+                    var uc = (u === 'L') ? 'L' : u.toLowerCase();
+                    return num + '`' + RM + uc;
+                });
+
+            // 3) 문자+multi_unit (예: xcm → x`rmcm)
+            // 대문자 단위(예: ABCM의 CM)는 기하 기호이므로 변환 제외
+            result = result.replace(new RegExp('([a-zA-Z])(' + multiUnitPattern + ')\\b', 'gi'),
+                (match, ch, u) => (u.length >= 2 && u !== u.toLowerCase()) ? match : (ch + '`' + RM + u.toLowerCase()));
+
+            // 4) standalone multi_unit (예: cm → rmcm)
+            // 대문자 단위(예: CM)는 기하 기호이므로 변환 제외
+            result = result.replace(new RegExp('\\b(' + multiUnitPattern + ')\\b', 'gi'),
+                (match, u) => (u.length >= 2 && u !== u.toLowerCase()) ? match : (RM + u.toLowerCase()));
+
+            // 마커를 실제 rm으로 변환
+            result = result.replace(new RegExp(RM, 'g'), 'rm');
+
+            // DEG 명령어 복원
+            result = result.replace(/__PROTECTED_DEG__/g, 'DEG');
+
+            // 연립방정식 변환: {방정식1, 방정식2, ...} → {cases{방정식1#방정식2#...}}
+            // 중괄호 안에 쉼표로 구분된 항목들이 있을 때 변환 (중첩된 중괄호도 처리)
+            function convertSystemEquations(str) {
+                let result = '';
+                let i = 0;
+                
+                while (i < str.length) {
+                    if (str[i] === '{') {
+                        // 중괄호 시작 위치 찾기
+                        let depth = 1;
+                        let start = i;
+                        i++;
+                        
+                        // 매칭되는 닫는 중괄호 찾기
+                        while (i < str.length && depth > 0) {
+                            if (str[i] === '{') depth++;
+                            else if (str[i] === '}') depth--;
+                            i++;
+                        }
+                        
+                        // 중괄호 쌍을 찾았음
+                        if (depth === 0) {
+                            const content = str.substring(start + 1, i - 1);
+                            const fullMatch = str.substring(start, i);
+                            
+                            // 이미 cases로 시작하는 경우는 변환하지 않음
+                            if (fullMatch.includes('cases{')) {
+                                result += fullMatch;
+                            } else if (content.includes(',')) {
+                                // 쉼표를 #로 변환하고 cases 형식으로 변환
+                                // 공백 제거 후 #로 변환
+                                const convertedContent = content.replace(/\s*,\s*/g, '#');
+                                result += '{cases{' + convertedContent + '}}';
+                            } else {
+                                result += fullMatch;
+                            }
+                        } else {
+                            // 매칭되지 않은 경우 원본 유지
+                            result += str.substring(start, i);
+                        }
+                    } else {
+                        result += str[i];
+                        i++;
+                    }
+                }
+                
+                return result;
+            }
+            
+            result = convertSystemEquations(result);
+
+            // (숫자/숫자)^숫자 → LEFT ( {숫자} over {숫자} RIGHT )^숫자 변환
+            result = result.replace(/\(([^()]+)\/([^()]+)\)\^(\d+)/g, function(match, numerator, denominator, superscript) {
+                // // 패턴이 포함된 경우 분수 변환하지 않음
+                if (match.includes('//')) {
+                    return match;
+                }
+                // 이미 변환된 over는 건너뛰기
+                if (numerator.includes('over') || denominator.includes('over')) {
+                    return match;
+                }
+                let cleanNum = applyBarToUpperPairs(removeOuterParentheses(numerator.trim()));
+                let cleanDen = applyBarToUpperPairs(removeOuterParentheses(denominator.trim()));
+                return 'LEFT ( {' + cleanNum + '} over {' + cleanDen + '} RIGHT )^' + superscript;
+            });
+
+            // bar {내용}^숫자 → {bar {내용}}^숫자 변환
+            result = result.replace(/bar\s*\{([^}]+)\}\^(\d+)/g, '{bar {$1}}^$2');
+
+            // * 기호를 TIMES로 변환
+            result = result.replace(/\*/g, 'TIMES');
+            
+            // × 기호를 `TIMES`로 변환 (백틱이 텍스트로 출력되도록)
+            result = result.replace(/×/g, '`TIMES`');  // U+00D7 MULTIPLICATION SIGN → `TIMES` (백틱 포함)
+
+            // 괄호 안에 분수가 있는 경우 처리 (예: (1/2) → {1} over {2})
+            // 괄호 안에 쉼표가 있으면 쉼표로 구분된 각 항목의 분수를 개별적으로 처리 (예: (8/3, 1/3) → ({8} over {3}, {1} over {3}))
+            result = result.replace(/\(([^()]+)\)/g, function(match, content) {
+                // // 패턴이 포함된 경우 분수 변환하지 않음
+                if (match.includes('//')) {
+                    return match;
+                }
+                // 이미 변환된 over는 건너뛰기
+                if (content.includes('over')) {
+                    return match;
+                }
+                
+                // 쉼표가 있으면 각 항목을 개별적으로 처리
+                if (content.includes(',')) {
+                    // 쉼표로 구분된 각 항목에서 분수를 변환
+                    const items = content.split(',').map(item => {
+                        const trimmedItem = item.trim();
+                        // 각 항목에서 분수 패턴 찾기
+                        const fractionMatch = trimmedItem.match(/^([^\s\/]+)\/([^\s\/]+)$/);
+                        if (fractionMatch) {
+                            const num = fractionMatch[1].trim();
+                            const den = fractionMatch[2].trim();
+                            // AA는 분수 변환 예외
+                            if (num === 'AA' || den === 'AA') {
+                                return trimmedItem;
+                            }
+                            // 분자나 분모에 쉼표가 있으면 변환하지 않음
+                            if (num.includes(',') || den.includes(',')) {
+                                return trimmedItem;
+                            }
+                            return '{' + applyBarToUpperPairs(num) + '} over {' + applyBarToUpperPairs(den) + '}';
+                        }
+                        return trimmedItem;
+                    });
+                    return '(' + items.join(',`') + ')';
+                }
+                
+                // 쉼표가 없으면 기존 로직대로 처리
+                // 먼저 전체가 분수인지 확인
+                const fullFractionMatch = content.match(/^([^\/]+)\/([^\/]+)$/);
+                if (fullFractionMatch) {
+                    const numerator = fullFractionMatch[1].trim();
+                    const denominator = fullFractionMatch[2].trim();
+                    // AA는 분수 변환 예외
+                    if (numerator === 'AA' || denominator === 'AA') {
+                        return match;
+                    }
+                    // 이미 변환된 over는 건너뛰기
+                    if (numerator.includes('over') || denominator.includes('over')) {
+                        return match;
+                    }
+                    // LEFT/RIGHT 구문으로 분수 변환
+                    let cleanNum = applyBarToUpperPairs(removeOuterParentheses(numerator));
+                    let cleanDen = applyBarToUpperPairs(removeOuterParentheses(denominator));
+                    return 'LEFT ( {' + cleanNum + '} over {' + cleanDen + '} RIGHT )';
+                }
+                
+                // 전체가 분수가 아니면 내용 안에서 분수 패턴을 찾아서 변환
+                // 예: (1/3+1) → LEFT ( {1} over {3} + 1 RIGHT )
+                // 연산자(+, -, *)가 포함된 경우 분수 부분만 변환
+                if (/[+\-*]/.test(content)) {
+                    // 분수 패턴 찾기 (연산자로 구분되지 않은 순수 분수만)
+                    // 백틱(`)을 공백과 동일한 토큰 경계로 처리 (하이브리드 모드 공백→백틱 변환 후 일관성)
+                    const fractionPattern = /([^\s`+\-*\/,()]+)\/([^\s`+\-*\/,()]+)/g;
+                    let convertedContent = content;
+                    let hasFraction = false;
+                    convertedContent = convertedContent.replace(fractionPattern, function(fracMatch, num, den) {
+                        // AA는 분수 변환 예외
+                        if (num.trim() === 'AA' || den.trim() === 'AA') {
+                            return fracMatch;
+                        }
+                        // 이미 변환된 over는 건너뛰기
+                        if (num.includes('over') || den.includes('over')) {
+                            return fracMatch;
+                        }
+                        // 분자나 분모에 연산자가 있으면 변환하지 않음 (이미 필터링됨)
+                        hasFraction = true;
+                        return '{' + applyBarToUpperPairs(num.trim()) + '} over {' + applyBarToUpperPairs(den.trim()) + '}';
+                    });
+                    // 분수가 포함된 경우 LEFT/RIGHT 구문 사용
+                    if (hasFraction) {
+                        return 'LEFT ( ' + convertedContent + ' RIGHT )';
+                    }
+                    // 분수가 없으면 괄호 유지하고 변환된 내용 반환
+                    return '(' + convertedContent + ')';
+                }
+                
+                return match;
+            });
+
+            // 괄호로 감싸진 분수 처리 (예: (-4 - 2)/(1 - (-1)))
+            result = convertParenthesizedFraction(result);
+
+            // 등호 뒤의 분수 처리 (예: x=7/36 → x = {7} over {36}, g(b)=-5/2 → g(b) = - {5} over {2})
+            result = result.replace(/=\s*(-?)(\d+)\/(\d+)/g, function(match, minus, numerator, denominator) {
+                if (minus) {
+                    return ' = - {' + numerator + '} over {' + denominator + '}';
+                } else {
+                    return ' = {' + numerator + '} over {' + denominator + '}';
+                }
+            });
+
+            // 등호 및 부등호 기호를 기준으로 분리하여 앞 부분만 분수 변환 처리
+            // 예: 6/b=3 → {6} over {b} = 3, 6/b>3 → {6} over {b} > 3
+            // 부등호: =, >, <, ≤, ≥, ≠, ≒, ≡
+            // 단, {cases{...}} 내부의 등호/부등호는 처리하지 않음
+            const comparisonOperators = /[=><≤≥≠≒≡]/;
+            if (comparisonOperators.test(result)) {
+                // {cases{...}} 패턴을 임시 마커로 치환하여 보호 (중첩된 중괄호 처리)
+                const tempMarkerPrefix = '__TEMP_CASES_MARKER_';
+                const casesMarkers = [];
+                let markerIndex = 0;
+                
+                function protectCasesPattern(str) {
+                    let result = '';
+                    let i = 0;
+                    
+                    while (i < str.length) {
+                        if (str.substring(i).startsWith('{cases{')) {
+                            // {cases{ 시작 위치 찾기
+                            let depth = 1;
+                            let start = i;
+                            i += 7; // '{cases{' 길이
+                            
+                            // 매칭되는 닫는 }} 찾기
+                            while (i < str.length && depth > 0) {
+                                if (str[i] === '{') depth++;
+                                else if (str[i] === '}') depth--;
+                                i++;
+                            }
+                            
+                            // 중괄호 쌍을 찾았음
+                            if (depth === 0) {
+                                const fullMatch = str.substring(start, i);
+                                const marker = tempMarkerPrefix + markerIndex;
+                                casesMarkers.push({ marker: marker, value: fullMatch });
+                                markerIndex++;
+                                result += marker;
+                            } else {
+                                // 매칭되지 않은 경우 원본 유지
+                                result += str.substring(start, i);
+                            }
+                        } else {
+                            result += str[i];
+                            i++;
+                        }
+                    }
+                    
+                    return result;
+                }
+                
+                let protectedResult = protectCasesPattern(result);
+                
+                // 등호/부등호를 기준으로 분리 (첫 번째 등호/부등호 기준)
+                const match = protectedResult.match(/(.*?)([=><≤≥≠≒≡])(.*)/);
+                if (match) {
+                    let beforeOperator = match[1];
+                    let operator = match[2];
+                    let afterOperator = match[3];
+                    
+                    // 마커를 원래 값으로 복원
+                    casesMarkers.forEach(function(item) {
+                        const escapedMarker = item.marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        beforeOperator = beforeOperator.replace(new RegExp(escapedMarker, 'g'), item.value);
+                        afterOperator = afterOperator.replace(new RegExp(escapedMarker, 'g'), item.value);
+                    });
+                    
+                    // 분수 변환 함수 (공통 로직)
+                    function convertFraction(match, numerator, denominator) {
+                        // // 패턴이 포함된 경우 분수 변환하지 않음
+                        if (match.includes('//')) {
+                            return match;
+                        }
+                        // AA는 분수 변환 예외
+                        if (numerator.trim() === 'AA' || denominator.trim() === 'AA') {
+                            return match;
+                        }
+                        // 이미 변환된 over는 건너뛰기
+                        if (numerator.includes('over') || denominator.includes('over')) {
+                            return match;
+                        }
+                        // 분자 또는 분모에 쉼표가 포함되어 있으면 분수로 인식하지 않음
+                        // 예: (8/3, 1/3)에서 8/3, 1/3를 분수로 인식하지 않도록
+                        if (numerator.includes(',') || denominator.includes(',')) {
+                            return match;
+                        }
+                        // 분자/분모에 연산자(+, -, *)가 중간에 있으면 분수로 인식하지 않음 (선두 - 는 허용)
+                        // 단, 분모가 (-숫자) 형태(괄호 안 단일 음수)면 예외로 허용 → {3} over {( - 2)}
+                        var numCore = numerator.replace(/`/g, '').trim().replace(/^[+\-]\s*/, '');
+                        var denCore = denominator.replace(/`/g, '').trim().replace(/^[+\-]\s*/, '');
+                        var denParenNeg = denominator.match(/^\s*\(\s*-\s*(\d+(?:\.\d+)?)\s*\)\s*$/);
+                        if (denParenNeg) {
+                            // 분모 (-2) 예외: {3} over {( - 2)}
+                            var numPart = numerator.replace(/`/g, '').trim();
+                            var fn = formatNumForOver(numPart);
+                            return (fn.prefix ? fn.prefix : '') + fn.body + ' over {( - ' + denParenNeg[1] + ')}';
+                        }
+                        if (/[+\-*]/.test(numCore) || /[+\-*]/.test(denCore)) {
+                            return match;
+                        }
+                        // 분자 또는 분모에 등호/부등호(=, >, <, ≤, ≥, ≠, ≒, ≡)가 포함되어 있으면 분수로 인식하지 않음
+                        // 예: 27/5 = 21/10에서 5 = 21이 분모로 인식되지 않도록
+                        // 예: 180° × 1/6 = 30°에서 TIMES1/6 = 30이 분수로 인식되지 않도록
+                        if (/[=><≤≥≠≒≡]/.test(numerator) || /[=><≤≥≠≒≡]/.test(denominator)) {
+                            return match;
+                        }
+                        
+                        // 백틱 제거 (백틱은 공백의 대체이므로 분수 변환 시 제거)
+                        numerator = numerator.replace(/`/g, '').trim();
+                        denominator = denominator.replace(/`/g, '').trim();
+                        
+                        // 분모에 변수나 연산자가 포함된 경우 분수를 더 짧게 인식
+                        // 예: 7/3x+2 → 7/3만 분수로 인식
+                        // 단, 변수만으로 이루어진 분수(b/a)는 분수로 인식
+                        // 분모에서 숫자만 추출 (변수나 연산자 전까지)
+                        let restAfterDenominator = '';
+                        const denMatch = denominator.match(/^(\d+(?:\.\d+)?)(.*)$/);
+                        if (denMatch) {
+                            const numericPart = denMatch[1];
+                            const restPart = denMatch[2];
+                            // 나머지 부분에 변수나 연산자가 있으면 분모를 숫자 부분만으로 제한
+                            if (restPart && (/[a-zA-Z]/.test(restPart) || /[+\-*]/.test(restPart))) {
+                                denominator = numericPart;
+                                restAfterDenominator = restPart;
+                            }
+                        }
+                        // 분모가 숫자로 시작하지 않지만 변수만으로 이루어진 경우(b/a)는 분수로 인식
+                        // 분모가 연산자로 시작하는 경우만 분수로 인식하지 않음
+                        
+                        // -6/-6 → { - 6} over { - 6},  - 6/-6 → - {6} over { - 6}
+                        const superscriptPattern = /\^(\d+)$/;
+                        const denomSup = denominator.match(superscriptPattern);
+                        const numSup = numerator.match(superscriptPattern);
+                        var numPart = numerator.replace(superscriptPattern, '').replace(/`/g, '').trim();
+                        var denPart = denominator.replace(superscriptPattern, '').replace(/`/g, '').trim();
+                        numPart = applyBarToUpperPairs(numPart);
+                        denPart = applyBarToUpperPairs(denPart);
+
+                        var fn = formatNumForOver(numPart);
+                        var fd = formatDenForOver(denPart);
+                        // 분자/분모에 각각 위첨자 붙이기 (AE^2/2^3 → {AE}^2 over {2}^{3})
+                        var numBody = fn.body;
+                        var denBody = fd;
+                        if (numSup) numBody = numBody + '^' + numSup[1];
+                        if (denomSup) denBody = denBody + '^{' + denomSup[1] + '}';
+                        var fractionPart = numBody + ' over ' + denBody;
+                        return (fn.prefix ? fn.prefix : '') + fractionPart + restAfterDenominator;
+                    }
+                    
+                    // num/(음수) 패턴 선처리: 3/(-2) → {3} over {( - 2)} (분모 괄호 안 단일 음수)
+                    var parenNegFracPattern = /([^\s`{}+\-*\/=><≤≥≠≒≡]+)[\s`]*\/[\s`]*\(\s*-\s*(\d+(?:\.\d+)?)\s*\)/g;
+                    beforeOperator = beforeOperator.replace(parenNegFracPattern, function(m, num, neg) {
+                        var fn = formatNumForOver(num.replace(/`/g, '').trim());
+                        return (fn.prefix ? fn.prefix : '') + fn.body + ' over {( - ' + neg + ')}';
+                    });
+                    afterOperator = afterOperator.replace(parenNegFracPattern, function(m, num, neg) {
+                        var fn = formatNumForOver(num.replace(/`/g, '').trim());
+                        return (fn.prefix ? fn.prefix : '') + fn.body + ' over {( - ' + neg + ')}';
+                    });
+
+                    // num/(expr) 변환: 10/(k-1) → {10} over {k - 1} (parenNeg 다음, fraction 전)
+                    beforeOperator = convertNumOverParenExpr(beforeOperator);
+                    afterOperator = convertNumOverParenExpr(afterOperator);
+
+                    // 등호/부등호 앞 부분에 대한 분수 변환
+                    // 백틱(`)이 포함된 분수도 인식: `15` / `2` 또는 15/2
+                    // 먼저 백틱을 포함한 분수 패턴을 처리: `숫자` / `숫자` 또는 `숫자`/숫자 또는 숫자/`숫자` → 숫자/숫자
+                    // 등호/부등호가 포함되지 않은 분수만 처리
+                    // 공백이 포함된 경우도 처리: ` 1 ` / ` 3 ` 형태
+                    beforeOperator = beforeOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                    beforeOperator = beforeOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*([^\s`\/=><≤≥≠≒≡]+)/g, '$1/$2');
+                    beforeOperator = beforeOperator.replace(/([^\s`\/=><≤≥≠≒≡]+)\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                    // 연산자로 구분된 분수를 개별적으로 인식, / 전후 띄어쓰기·백틱 허용 (-6/-6, 2/-3)
+                    // 분모 선두 - 허용: 2/-3 → {2} over { - 3}
+                    // 백틱(`)을 공백과 동일한 토큰 경계로 처리 (하이브리드 모드: 2*3*4* 1/2 → 2*3*4*{1}over{2})
+                    let fractionPattern = /([^\s`{}+\-*\/=><≤≥≠≒≡]+)[\s`]*\/[\s`]*(-?[^\s`{}+\-*\/=><≤≥≠≒≡]+)/g;
+                    beforeOperator = beforeOperator.replace(fractionPattern, convertFraction);
+                    
+                    // 등호/부등호 뒤 부분에 대한 분수 변환 (등호/부등호 뒤에 바로 오는 분수도 변환)
+                    // 등호/부등호 뒤 부분에서도 등호가 포함되지 않도록 등호/부등호로 다시 분리하여 처리
+                    // 예: " 180° × 1/6 = 30°"에서 "1/6"만 변환되도록
+                    const afterMatch = afterOperator.match(/(.*?)([=><≤≥≠≒≡])(.*)/);
+                    if (afterMatch) {
+                        let beforeAfterOperator = afterMatch[1];
+                        let afterAfterOperator = afterMatch[2] + afterMatch[3];
+                        
+                        // 먼저 백틱을 포함한 분수 패턴을 처리 (등호/부등호 제외)
+                        // 공백이 포함된 경우도 처리: ` 1 ` / ` 3 ` 형태
+                        beforeAfterOperator = beforeAfterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        beforeAfterOperator = beforeAfterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*([^\s`\/=><≤≥≠≒≡]+)/g, '$1/$2');
+                        beforeAfterOperator = beforeAfterOperator.replace(/([^\s`\/=><≤≥≠≒≡]+)\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        beforeAfterOperator = beforeAfterOperator.replace(fractionPattern, convertFraction);
+                        
+                        // afterAfterOperator에서도 분수 변환 수행 (등호 뒤 부분)
+                        // 백틱을 포함한 분수 패턴을 처리
+                        afterAfterOperator = afterAfterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        afterAfterOperator = afterAfterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*([^\s`\/=><≤≥≠≒≡]+)/g, '$1/$2');
+                        afterAfterOperator = afterAfterOperator.replace(/([^\s`\/=><≤≥≠≒≡]+)\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        // 등호/부등호로 다시 분리하여 처리
+                        const afterAfterMatch = afterAfterOperator.match(/(.*?)([=><≤≥≠≒≡])(.*)/);
+                        if (afterAfterMatch) {
+                            let beforeAfterAfterOperator = afterAfterMatch[1];
+                            let afterAfterAfterOperator = afterAfterMatch[2] + afterAfterMatch[3];
+                            beforeAfterAfterOperator = beforeAfterAfterOperator.replace(fractionPattern, convertFraction);
+                            afterAfterOperator = beforeAfterAfterOperator + afterAfterAfterOperator;
+                        } else {
+                            afterAfterOperator = afterAfterOperator.replace(fractionPattern, convertFraction);
+                        }
+                        
+                        afterOperator = beforeAfterOperator + afterAfterOperator;
+                    } else {
+                        // 등호/부등호가 없으면 그대로 처리 (등호/부등호 제외)
+                        // 공백이 포함된 경우도 처리: ` 1 ` / ` 3 ` 형태
+                        afterOperator = afterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        afterOperator = afterOperator.replace(/`\s*([^\s`=><≤≥≠≒≡]+)\s*`\s*\/\s*([^\s`\/=><≤≥≠≒≡]+)/g, '$1/$2');
+                        afterOperator = afterOperator.replace(/([^\s`\/=><≤≥≠≒≡]+)\s*\/\s*`\s*([^\s`=><≤≥≠≒≡]+)\s*`/g, '$1/$2');
+                        afterOperator = afterOperator.replace(fractionPattern, convertFraction);
+                    }
+                    
+                    // 다시 합치기
+                    result = beforeOperator + operator + afterOperator;
+                }
+            }
+
+            // num/(음수) 패턴 선처리: 3/(-2) → {3} over {( - 2)} (비교연산자 블록 밖)
+            result = result.replace(/([^\s`{}+\-*\/=><≤≥≠≒≡]+)[\s`]*\/[\s`]*\(\s*-\s*(\d+(?:\.\d+)?)\s*\)/g, function(m, num, neg) {
+                var fn = formatNumForOver(num.replace(/`/g, '').trim());
+                return (fn.prefix ? fn.prefix : '') + fn.body + ' over {( - ' + neg + ')}';
+            });
+
+            // num/(expr) 변환: 10/(k-1) → {10} over {k - 1}
+            result = convertNumOverParenExpr(result);
+
+            // 단순 분수 변환 (연산자 제외 패턴: 1+2/3→2/3만, -3/2, 2/-3 허용)
+            // 분자·분모 모두 선두 - 허용: -3/2, 2/-3
+            // 백틱(`)을 공백과 동일한 토큰 경계로 처리 (하이브리드 모드 공백→백틱 후 일관성)
+            let fractionPattern = /(-?[^\s`{}+\-*\/=><≤≥≠≒≡]+)[\s`]*\/[\s`]*(-?[^\s`{}+\-*\/=><≤≥≠≒≡]+)/g;
+            result = result.replace(fractionPattern, function(match, numerator, denominator, offset, string) {
+                // // 패턴이 포함된 경우 분수 변환하지 않음
+                if (match.includes('//')) {
+                    return match;
+                }
+                // AA는 분수 변환 예외
+                if (numerator.trim() === 'AA' || denominator.trim() === 'AA') {
+                    return match;
+                }
+                // 이미 변환된 over는 건너뛰기
+                if (numerator.includes('over') || denominator.includes('over')) {
+                    return match;
+                }
+                // 분자 또는 분모에 등호/부등호(=, >, <, ≤, ≥, ≠, ≒, ≡)가 포함되어 있으면 분수로 인식하지 않음
+                // 예: g(b)=-5/2, 6/b=3, 6/b>3
+                if (/[=><≤≥≠≒≡]/.test(numerator) || /[=><≤≥≠≒≡]/.test(denominator)) {
+                    return match;
+                }
+                // 분자 또는 분모에 쉼표가 포함되어 있으면 분수로 인식하지 않음
+                if (numerator.includes(',') || denominator.includes(',')) {
+                    return match;
+                }
+                // 분자/분모에 연산자(+, -, *)가 중간에 있으면 분수 아님 (선두 - 는 허용)
+                var numCore = numerator.replace(/`/g, '').trim().replace(/^[+\-]\s*/, '');
+                var denCore = denominator.replace(/`/g, '').trim().replace(/^[+\-]\s*/, '');
+                if (/[+\-*]/.test(numCore) || /[+\-*]/.test(denCore)) {
+                    return match;
+                }
+                
+                // 분모에 변수나 연산자가 포함된 경우 분수를 더 짧게 인식
+                // 예: 7/3x+2 → 7/3만 분수로 인식
+                // 단, 변수만으로 이루어진 분수(b/a)는 분수로 인식
+                // 분모에서 숫자만 추출 (변수나 연산자 전까지)
+                let restAfterDenominator = '';
+                const denMatch = denominator.match(/^(\d+(?:\.\d+)?)(.*)$/);
+                if (denMatch) {
+                    const numericPart = denMatch[1];
+                    const restPart = denMatch[2];
+                    // 나머지 부분에 변수나 연산자가 있으면 분모를 숫자 부분만으로 제한
+                    if (restPart && (/[a-zA-Z]/.test(restPart) || /[+\-*]/.test(restPart))) {
+                        denominator = numericPart;
+                        restAfterDenominator = restPart;
+                    }
+                }
+                // 분모가 숫자로 시작하지 않지만 변수만으로 이루어진 경우(b/a)는 분수로 인식
+                // 분모가 연산자로 시작하는 경우만 분수로 인식하지 않음
+                // 괄호 안에 있는지 확인 (이미 괄호 안의 분수 변환 로직에서 처리했으므로 건너뛰기)
+                const before = string.substring(Math.max(0, offset - 100), offset);
+                const after = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 100));
+                // 앞에 열린 괄호가 있고, 그 사이에 닫는 괄호가 없으면 괄호 안에 있음
+                let depth = 0;
+                for (let i = before.length - 1; i >= 0; i--) {
+                    if (before[i] === ')') depth++;
+                    else if (before[i] === '(') {
+                        if (depth === 0) {
+                            // 열린 괄호를 찾았고, 뒤에 닫는 괄호가 있는지 확인
+                            const afterPart = after.substring(0, Math.min(100, after.length));
+                            if (afterPart.includes(')')) {
+                                return match; // 괄호 안에 있으므로 건너뛰기
+                            }
+                            break;
+                        } else {
+                            depth--;
+                        }
+                    }
+                }
+                
+                // -6/-6 → { - 6} over { - 6},  - 6/-6 → - {6} over { - 6}
+                var numPart = numerator.replace(/\^(\d+)$/, '').replace(/`/g, '').trim();
+                var denPart = denominator.replace(/\^(\d+)$/, '').replace(/`/g, '').trim();
+                numPart = applyBarToUpperPairs(numPart);
+                denPart = applyBarToUpperPairs(denPart);
+                var superscriptPattern = /\^(\d+)$/;
+                var denomSup = denominator.match(superscriptPattern);
+                var numSup = numerator.match(superscriptPattern);
+                var fn = formatNumForOver(numPart);
+                var fd = formatDenForOver(denPart);
+                // 분자/분모에 각각 위첨자 붙이기
+                var numBody = fn.body;
+                var denBody = fd;
+                if (numSup) numBody = numBody + '^' + numSup[1];
+                if (denomSup) denBody = denBody + '^{' + denomSup[1] + '}';
+                var fractionPart = numBody + ' over ' + denBody;
+                return (fn.prefix ? fn.prefix : '') + fractionPart + restAfterDenominator;
+            });
+
+            // sqrt 변환
+            result = result.replace(/sqrt\(([^)]+)\)/g, 'sqrt{$1}');
+
+            // 등호와 연산자 주변에 공백 추가 (=, +, -, *, /)
+            // 이미 공백이 있는 경우는 제거 후 일관되게 추가
+            // 단, 이미 변환된 분수(over) 내부의 /는 건너뛰기
+            // 단, {cases{...}} 내부의 등호는 공백 추가하지 않음
+            // {cases{...}} 패턴을 임시 마커로 치환하여 보호 (중첩된 중괄호 처리)
+            const tempCasesMarkerPrefix = '__TEMP_CASES_SPACE_MARKER_';
+            const casesSpaceMarkers = [];
+            let casesSpaceMarkerIndex = 0;
+            
+            function protectCasesPatternForSpace(str) {
+                let result = '';
+                let i = 0;
+                
+                while (i < str.length) {
+                    if (str.substring(i).startsWith('{cases{')) {
+                        // {cases{ 시작 위치 찾기
+                        let depth = 1;
+                        let start = i;
+                        i += 7; // '{cases{' 길이
+                        
+                        // 매칭되는 닫는 }} 찾기
+                        while (i < str.length && depth > 0) {
+                            if (str[i] === '{') depth++;
+                            else if (str[i] === '}') depth--;
+                            i++;
+                        }
+                        
+                        // 중괄호 쌍을 찾았음
+                        if (depth === 0) {
+                            const fullMatch = str.substring(start, i);
+                            const marker = tempCasesMarkerPrefix + casesSpaceMarkerIndex;
+                            casesSpaceMarkers.push({ marker: marker, value: fullMatch });
+                            casesSpaceMarkerIndex++;
+                            result += marker;
+                        } else {
+                            // 매칭되지 않은 경우 원본 유지
+                            result += str.substring(start, i);
+                        }
+                    } else {
+                        result += str[i];
+                        i++;
+                    }
+                }
+                
+                return result;
+            }
+            
+            let spaceProtectedResult = protectCasesPatternForSpace(result);
+            
+            // 공백 추가 (백틱(`) 포함 정규화 → 공백으로 통일)
+            // `op` 대신 ` op ` (공백) 사용 - HWP 수식 가독성 향상
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*=[\s`]*/g, ' = ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*>[\s`]*/g, ' > ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*<[\s`]*/g, ' < ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*≤[\s`]*/g, ' ≤ ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*≥[\s`]*/g, ' ≥ ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*≠[\s`]*/g, ' ≠ ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*≒[\s`]*/g, ' ≒ ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*≡[\s`]*/g, ' ≡ ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*\+[\s`]*/g, ' + ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*-[\s`]*/g, ' - ');
+            spaceProtectedResult = spaceProtectedResult.replace(/[\s`]*\*[\s`]*/g, ' * ');
+            // TIMES 연산자 주변 공백 추가 (백틱으로 감싸진 경우와 그렇지 않은 경우 모두 처리)
+            // `TIMES` 주변에 공백이 없으면 추가하여, 이후 띄어쓰기 인식 단계에서 백틱으로 변환되도록 함
+            spaceProtectedResult = spaceProtectedResult.replace(/([^\s])`TIMES`([^\s])/g, '$1 `TIMES` $2');
+            spaceProtectedResult = spaceProtectedResult.replace(/([^\s])TIMES([^\s])/g, '$1 TIMES $2');
+            // / 연산자 주변 공백 추가 (단, over가 포함된 부분은 건너뛰기)
+            // over가 포함되지 않은 /만 처리
+            // 단, 괄호 안의 /는 공백 추가하지 않음 (괄호 안의 분수 변환 로직에서 처리)
+            // 단, ⫽ (평행선 기호) 앞뒤의 /는 공백 추가하지 않음
+            spaceProtectedResult = spaceProtectedResult.replace(/\s*\/\s*/g, function(match, offset, string) {
+                // 앞뒤 문맥 확인하여 over가 포함되어 있으면 공백 추가하지 않음
+                const before = string.substring(Math.max(0, offset - 10), offset);
+                const after = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 10));
+                if (before.includes('over') || after.includes('over')) {
+                    return match; // 공백 추가하지 않음
+                }
+                // ⫽ (평행선 기호) 앞뒤의 /는 공백 추가하지 않음
+                if (before.includes('⫽') || after.includes('⫽')) {
+                    return match; // 공백 추가하지 않음
+                }
+                // 괄호 안에 있는지 확인
+                const beforeFull = string.substring(Math.max(0, offset - 100), offset);
+                const afterFull = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 100));
+                // 앞에 열린 괄호가 있고, 그 사이에 닫는 괄호가 없으면 괄호 안에 있음
+                let depth = 0;
+                for (let i = beforeFull.length - 1; i >= 0; i--) {
+                    if (beforeFull[i] === ')') depth++;
+                    else if (beforeFull[i] === '(') {
+                        if (depth === 0) {
+                            // 열린 괄호를 찾았고, 뒤에 닫는 괄호가 있는지 확인
+                            if (afterFull.includes(')')) {
+                                return match; // 괄호 안에 있으므로 공백 추가하지 않음
+                            }
+                            break;
+                        } else {
+                            depth--;
+                        }
+                    }
+                }
+                return ' / ';
+            });
+            
+            // 마커를 원래 값으로 복원
+            casesSpaceMarkers.forEach(function(item) {
+                const escapedMarker = item.marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                spaceProtectedResult = spaceProtectedResult.replace(new RegExp(escapedMarker, 'g'), item.value);
+            });
+            
+            result = spaceProtectedResult;
+            
+            // 이미 변환된 분수 괄호를 LEFT/RIGHT로 변환
+            // ({...} over {...}) 패턴을 LEFT ( {...} over {...} RIGHT )로 변환
+            // 정규식을 사용하여 더 정확하게 매칭
+            result = result.replace(/\((\s*\{[^}]+\}\s+over\s+\{[^}]+\}\s*)\)/g, function(match, content, offset, string) {
+                // 이미 LEFT/RIGHT가 있는 경우는 변환하지 않음
+                const before = string.substring(Math.max(0, offset - 10), offset);
+                if (before.includes('LEFT')) {
+                    return match;
+                }
+                return 'LEFT ( ' + content.trim() + ' RIGHT )';
+            });
+            
+            // 위첨자가 있는 경우도 처리: ({...} over {...})^숫자
+            result = result.replace(/\((\s*\{[^}]+\}\s+over\s+\{[^}]+\}\s*)\)\^(\d+)/g, function(match, content, superscript, offset, string) {
+                const before = string.substring(Math.max(0, offset - 10), offset);
+                if (before.includes('LEFT')) {
+                    return match;
+                }
+                return 'LEFT ( ' + content.trim() + ' RIGHT )^' + superscript;
+            });
+            
+            // 소문자+L(점/변수) → 소문자 rmL (예: aL → a rmL, xL → x rmL)
+            result = result.replace(/([a-z])L(?![a-zA-Z])/g, '$1 rmL');
+            // 독립된 대문자 알파벳을 로마체(RM)로 변환 (예: O → RMO, L → RML, S → RMS)
+            // 다른 문자에 인접한 대문자, bar {} 내부, HWP 명령어(TIMES 등)는 제외
+            result = result.replace(/(?<![a-zA-Z{])([A-Z])(?![a-zA-Z])/g, 'RM$1');
+
+            // 연속된 공백을 하나로 정리
+            result = result.replace(/\s+/g, ' ').trim();
+
+            return result;
+        }
+
+        // 수식 변환 버튼
+        function convertFormula() {
+            const currentValue = equationInput.value.trim();
+            if (!currentValue) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            // 히스토리 정리 후 변환 전 상태를 먼저 추가 (Ctrl+Z 되돌리기용)
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+            if (history[history.length - 1] !== currentValue) {
+                history.push(currentValue);
+                historyStep = history.length - 1;
+            }
+
+            const converted = convertToCustomFormat(currentValue);
+            equationInput.value = converted;
+
+            // Bold 자동 활성화가 켜져있으면 bold{} 유지
+            if (boldAutoEnabled) {
+                ensureBold();
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                ensureRM();
+            }
+
+            // 변환된 값 히스토리에 추가
+            const finalValue = equationInput.value;
+            history.push(finalValue);
+            historyStep = history.length - 1;
+
+            showResult('✅ 수식이 변환되었습니다! (Ctrl+Z로 되돌리기)', 'success');
+        }
+
+        // 띄어쓰기 없애기 - 선택 영역 또는 전체에서 공백/백틱 제거
+        function removeSpacesInSelection(inputEl) {
+            if (!inputEl || !inputEl.value) return;
+            const start = inputEl.selectionStart;
+            const end = inputEl.selectionEnd;
+            const hasSelection = start !== end;
+            const text = inputEl.value;
+            let targetText, newText, newStart, newEnd;
+            if (hasSelection) {
+                targetText = text.substring(start, end);
+                newText = targetText.replace(/[\s`]/g, '');
+                const before = text.substring(0, start);
+                const after = text.substring(end);
+                inputEl.value = before + newText + after;
+                newStart = newEnd = start + newText.length;
+            } else {
+                newText = text.replace(/[\s`]/g, '');
+                inputEl.value = newText;
+                newStart = newEnd = newText.length;
+            }
+            inputEl.setSelectionRange(newStart, newEnd);
+            inputEl.focus();
+            if (inputEl === equationInput) {
+                if (historyStep < history.length - 1) history = history.slice(0, historyStep + 1);
+                history.push(inputEl.value);
+                historyStep = history.length - 1;
+                showResult('✅ 띄어쓰기를 제거했습니다.', 'success');
+            } else if (inputEl.id === 'sourceText') {
+                tokenizeAndPreview();
+                showHybridResult('✅ 띄어쓰기를 제거했습니다.', 'success');
+            }
+        }
+
+        // 띄어쓰기 인식 버튼 - 스페이스를 백틱으로 변환
+        function convertSpacesToBackticks() {
+            const currentValue = equationInput.value;
+            if (!currentValue) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            // 보호할 패턴들: 분수 형식과 함수 형식
+            const protectedPatterns = [
+                { pattern: /\}\s+over\s+\{/g, replacement: '} over {' },
+                { pattern: /\bbar\s+\{/g, replacement: 'bar {' },
+                { pattern: /\bsqrt\s+\{/g, replacement: 'sqrt {' },
+                { pattern: /\bbold\s+\{/g, replacement: 'bold {' },
+                { pattern: /\barch\s+\{/g, replacement: 'arch {' },
+                { pattern: /\bangle\s+\{/g, replacement: 'angle {' }
+            ];
+            
+            const markers = [];
+            let markerIndex = 0;
+            const tempMarkerPrefix = '__TEMP_SPACE_MARKER_';
+            
+            // 보호할 패턴들을 임시 마커로 치환
+            let converted = currentValue;
+            protectedPatterns.forEach(function(item) {
+                converted = converted.replace(item.pattern, function(match) {
+                    const marker = tempMarkerPrefix + markerIndex;
+                    markers.push({ marker: marker, value: item.replacement });
+                    markerIndex++;
+                    return marker;
+                });
+            });
+            
+            // 나머지 공백을 백틱으로 변환
+            converted = converted.replace(/ /g, '`');
+            
+            // 임시 마커를 원래 패턴으로 복원
+            markers.forEach(function(item) {
+                // 마커를 정규식 이스케이프하여 정확히 매칭되도록 함
+                const escapedMarker = item.marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                converted = converted.replace(new RegExp(escapedMarker, 'g'), item.value);
+            });
+            
+            equationInput.value = converted;
+
+            // Bold 자동 활성화가 켜져있으면 bold{} 유지
+            if (boldAutoEnabled) {
+                ensureBold();
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                ensureRM();
+            }
+
+            // 히스토리에 추가
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+            const finalValue = equationInput.value;
+            history.push(finalValue);
+            historyStep = history.length - 1;
+
+            showResult('✅ 띄어쓰기가 백틱으로 변환되었습니다!', 'success');
+        }
+
+        // 선분으로 모두 바꾸기 버튼 - 2개 이상의 연속 문자를 bar{}로 변환
+        function convertAllToBar() {
+            const currentValue = equationInput.value;
+            if (!currentValue) {
+                showResult('수식을 입력해주세요!', 'error');
+                return;
+            }
+
+            // 단위 목록 정의 (대소문자 구분 없이 매칭)
+            const units = [
+                // 길이 단위
+                'cm', 'mm', 'm', 'km', 'in', 'ft', 'yd',
+                // 무게 단위
+                'kg', 'g', 'mg', 'lb', 'oz',
+                // 부피 단위
+                'l', 'ml', 'cc',
+                // 각도 단위
+                'deg', 'rad',
+                // 시간 단위
+                'sec', 'min', 'hr',
+                // 기타
+                'hz', 'v', 'a', 'w'
+            ];
+
+            // 분수 형식 `{숫자} over {숫자}` 패턴을 보호하기 위해 임시 마커로 치환
+            const tempMarkerPrefix = '__TEMP_OVER_MARKER_';
+            const markers = [];
+            let markerIndex = 0;
+            
+            // {숫자} over {숫자} 패턴을 찾아서 임시 마커로 치환
+            let converted = currentValue.replace(/\{[^}]+\}\s+over\s+\{[^}]+\}/g, function(match) {
+                const marker = tempMarkerPrefix + markerIndex;
+                markers.push({ marker: marker, value: match });
+                markerIndex++;
+                return marker;
+            });
+            
+            // 2개 이상의 연속된 대소문자 문자열을 찾아서 bar{}로 감싸기
+            // 이미 bar{}로 감싸진 것은 제외
+            // 작은따옴표(')가 포함된 문자열도 선분으로 인식 (예: C'F', A'B, AB')
+            // 아래첨자 문자(₀, ₁, ₂, ₃ 등)가 포함된 문자열도 선분으로 인식 (예: BC₃)
+            
+            // 대소문자, 작은따옴표, 아래첨자를 포함한 문자열을 찾는 정규식
+            // 패턴: 하나 이상의 대소문자로 시작하고, 작은따옴표와 대소문자(또는 작은따옴표만)가 0번 이상 반복, 아래첨자 문자 0개 이상
+            const pattern = /[A-Za-z]+(?:'[A-Za-z]*)*(?:[₀₁₂₃₄₅₆₇₈₉]+)?/g;
+            
+            // 모든 매치를 찾아서 변환
+            converted = converted.replace(pattern, function(match, offset, string) {
+                // 마커인지 확인 (임시 마커는 변환하지 않음)
+                if (match.startsWith(tempMarkerPrefix)) {
+                    return match; // 마커는 변환하지 않음
+                }
+                
+                // 앞뒤 문맥 확인하여 이미 bar{} 안에 있지 않은지 체크
+                const before = string.substring(Math.max(0, offset - 10), offset);
+                
+                // bar { 가 앞에 있고, 그 사이에 } 가 없으면 이미 감싸진 것
+                if (before.match(/bar\s*\{[^}]*$/)) {
+                    return match; // 이미 감싸진 경우 그대로 반환
+                }
+                
+                // 단위인지 확인 (대소문자 구분 없이)
+                const matchLower = match.toLowerCase();
+                if (units.includes(matchLower)) {
+                    return match; // 단위는 변환하지 않음
+                }
+                
+                // AA는 선분 변환의 예외 (닮음 조건 등에서 사용)
+                if (match === 'AA') {
+                    return match; // AA는 변환하지 않음
+                }
+                
+                // 알파벳 문자가 정확히 2개인 경우만 변환 (1개는 제외, 3개 이상도 제외)
+                // 작은따옴표를 제외한 알파벳 문자만 카운트
+                const alphabetCount = (match.match(/[A-Za-z]/g) || []).length;
+                
+                // 작은따옴표가 포함된 2글자 알파벳 패턴 (예: A'B', C'D')도 선분으로 인식
+                if (match.includes("'") && alphabetCount === 2) {
+                    // A'B' 형태는 선분으로 변환
+                    return 'bar {' + match + '}';
+                }
+                
+                if (alphabetCount !== 2) {
+                    return match; // 1개 또는 3개 이상은 변환하지 않음
+                }
+                
+                // 소문자만으로 이루어진 2글자는 변환하지 않음 (예: bx, ay, ax 등)
+                if (/^[a-z]{2}$/.test(match)) {
+                    return match; // 소문자만으로 이루어진 2글자는 변환하지 않음
+                }
+                
+                // 변환: bar {문자열}로 감싸기
+                return 'bar {' + match + '}';
+            });
+            
+            // 임시 마커를 원래 `{숫자} over {숫자}` 패턴으로 복원
+            markers.forEach(function(item) {
+                converted = converted.replace(item.marker, item.value);
+            });
+
+            equationInput.value = converted;
+
+            // Bold 자동 활성화가 켜져있으면 bold{} 유지
+            if (boldAutoEnabled) {
+                ensureBold();
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                ensureRM();
+            }
+
+            // 히스토리에 추가
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+            const finalValue = equationInput.value;
+            history.push(finalValue);
+            historyStep = history.length - 1;
+
+            showResult('✅ 모든 문자열이 선분(bar{})으로 변환되었습니다!', 'success');
+        }
+
+        // 초기화 버튼
+        function clearInput() {
+            equationInput.value = '';
+            
+            // Bold 자동 활성화가 켜져있으면 bold {로 시작
+            if (boldAutoEnabled) {
+                equationInput.value = 'bold {';
+            }
+            
+            // RM 자동 활성화가 켜져있으면 RM으로 시작
+            if (rmAutoEnabled) {
+                if (boldAutoEnabled) {
+                    equationInput.value = 'RMbold {';
+                } else {
+                    equationInput.value = 'RM';
+                }
+            }
+            
+            history = [equationInput.value];
+            historyStep = 0;
+            resultBox.className = 'result-box';
+            resultBox.textContent = '';
+        }
+
+        // 특수문자 삽입
+        function insertChar(char) {
+            const cursorPos = equationInput.selectionStart;
+            const textBefore = equationInput.value.substring(0, cursorPos);
+            const textAfter = equationInput.value.substring(equationInput.selectionEnd);
+
+            equationInput.value = textBefore + char + textAfter;
+
+            // Bold 자동 활성화가 켜져있으면 bold{} 유지
+            if (boldAutoEnabled) {
+                ensureBold();
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                ensureRM();
+            }
+
+            // 히스토리에 추가
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+            if (history[history.length - 1] !== equationInput.value) {
+                history.push(equationInput.value);
+                historyStep = history.length - 1;
+            }
+
+            const newCursorPos = equationInput.selectionStart;
+            equationInput.setSelectionRange(newCursorPos, newCursorPos);
+            equationInput.focus();
+        }
+
+        // 텍스트 선택 확인
+        function checkSelection() {
+            const selected = equationInput.value.substring(equationInput.selectionStart, equationInput.selectionEnd);
+            const symbolButtons = document.getElementById('symbolButtons');
+
+            if (selected && selected.trim().length > 0) {
+                selectedText = selected;
+                selectionStart = equationInput.selectionStart;
+                selectionEnd = equationInput.selectionEnd;
+
+                document.getElementById('sqrtBtn').style.display = 'block';
+                document.getElementById('boldBtn').style.display = 'block';
+
+                if (/^[A-Za-z]{2,}$/.test(selected)) {
+                    document.getElementById('barBtn').style.display = 'block';
+                    document.getElementById('archBtn').style.display = 'block';
+                    document.getElementById('angleBtn').style.display = 'block';
+                } else {
+                    document.getElementById('barBtn').style.display = 'none';
+                    document.getElementById('archBtn').style.display = 'none';
+                    document.getElementById('angleBtn').style.display = 'none';
+                }
+
+                symbolButtons.style.display = 'flex';
+            } else {
+                symbolButtons.style.display = 'none';
+            }
+        }
+
+        // 심볼 적용
+        function applySymbol(symbolType) {
+            const beforeText = equationInput.value.substring(0, selectionStart);
+            const afterText = equationInput.value.substring(selectionEnd);
+
+            let newText;
+            if (symbolType === 'sqrt') {
+                newText = beforeText + 'sqrt {' + selectedText + '}' + afterText;
+            } else if (symbolType === 'bold') {
+                newText = beforeText + 'bold {' + selectedText + '}' + afterText;
+            } else if (symbolType === 'bar') {
+                newText = beforeText + 'bar {' + selectedText + '}' + afterText;
+            } else if (symbolType === 'arch') {
+                newText = beforeText + 'arch {' + selectedText + '}' + afterText;
+            } else if (symbolType === 'angle') {
+                newText = beforeText + 'angle {' + selectedText + '}' + afterText;
+            }
+
+            equationInput.value = newText;
+
+            // Bold 자동 활성화가 켜져있으면 bold{} 유지
+            if (boldAutoEnabled) {
+                ensureBold();
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                ensureRM();
+            }
+
+            // 히스토리에 추가
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+            history.push(equationInput.value);
+            historyStep = history.length - 1;
+
+            document.getElementById('symbolButtons').style.display = 'none';
+            equationInput.focus();
+        }
+
+        // 입력창 히스토리 관리
+        equationInput.addEventListener('input', function() {
+            const currentValue = this.value;
+
+            // Bold 자동 활성화가 켜져있으면 bold{}로 감싸기
+            if (boldAutoEnabled) {
+                const cursorPos = this.selectionStart;
+                ensureBold();
+                // bold{}가 추가되었을 수 있으므로 커서 위치 조정
+                if (this.value.length > currentValue.length) {
+                    const addedLength = this.value.length - currentValue.length;
+                    this.setSelectionRange(cursorPos + addedLength, cursorPos + addedLength);
+                }
+            }
+
+            // RM 자동 활성화가 켜져있으면 RM 유지
+            if (rmAutoEnabled) {
+                const cursorPos = this.selectionStart;
+                ensureRM();
+                // RM이 추가되었을 수 있으므로 커서 위치 조정
+                if (this.value.length > currentValue.length) {
+                    const addedLength = this.value.length - currentValue.length;
+                    this.setSelectionRange(cursorPos + addedLength, cursorPos + addedLength);
+                }
+            }
+
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+
+            const finalValue = this.value;
+            if (history[history.length - 1] !== finalValue) {
+                history.push(finalValue);
+                historyStep = history.length - 1;
+
+                if (history.length > 100) {
+                    history.shift();
+                    historyStep--;
+                }
+            }
+        });
+
+        // 선택 이벤트 리스너
+        equationInput.addEventListener('mouseup', checkSelection);
+        equationInput.addEventListener('keyup', checkSelection);
+
+        // 단축키
+        equationInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                if (historyStep > 0) {
+                    historyStep--;
+                    this.value = history[historyStep];
+                }
+            }
+            else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                if (historyStep < history.length - 1) {
+                    historyStep++;
+                    this.value = history[historyStep];
+                }
+            }
+            else if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                convertFormula();
+            }
+            else if (e.ctrlKey && e.key === 'q') {
+                e.preventDefault();
+                executeQuickInsert();
+            }
+            else if (e.ctrlKey && e.key === 'x') {
+                e.preventDefault();
+                executeQuickInsertWithoutRM();
+            }
+            else if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                // 현재 선택된 텍스트 확인
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                const selected = this.value.substring(start, end);
+                
+                // 선택된 텍스트가 있으면 bold{}로 감싸기
+                if (selected && selected.trim().length > 0) {
+                    // 선택 상태 업데이트
+                    selectedText = selected;
+                    selectionStart = start;
+                    selectionEnd = end;
+                    // bold 적용
+                    applySymbol('bold');
+                }
+            }
+        });
+
+        // 초기 상태 확인
+        checkServerStatus();
+
+        // 5초마다 서버 상태 재확인
+        setInterval(checkServerStatus, 5000);
+
+        // ====================================
+        // 하이브리드 모드 기능
+        // ====================================
+
+        // 모드 전환 함수
+        function switchMode(mode) {
+            const equationMode = document.getElementById('equationMode');
+            const hybridMode = document.getElementById('hybridMode');
+            const tabEquation = document.getElementById('tabEquation');
+            const tabHybrid = document.getElementById('tabHybrid');
+
+            if (mode === 'equation') {
+                equationMode.style.display = 'block';
+                hybridMode.style.display = 'none';
+                tabEquation.classList.add('active');
+                tabHybrid.classList.remove('active');
+            } else {
+                equationMode.style.display = 'none';
+                hybridMode.style.display = 'block';
+                tabEquation.classList.remove('active');
+                tabHybrid.classList.add('active');
+                // 하이브리드 모드에서도 서버 상태 표시 동기화
+                syncHybridStatus();
+            }
+        }
+
+        // 하이브리드 모드 서버 상태 동기화
+        function syncHybridStatus() {
+            const hybridStatusIndicator = document.getElementById('hybridStatusIndicator');
+            const hybridStatusText = document.getElementById('hybridStatusText');
+            if (serverReady) {
+                hybridStatusIndicator.className = 'status-indicator status-ready';
+                hybridStatusText.textContent = '✅ 서버 연결됨 (포트: ' + actualPort + ')';
+            } else {
+                hybridStatusIndicator.className = 'status-indicator status-error';
+                hybridStatusText.textContent = '❌ 서버 미연결 - 시작 파일을 실행해주세요';
+            }
+        }
+
+        // 토크나이저 함수
+        function tokenizeText(text) {
+            function isKorean(ch) {
+                const code = ch.charCodeAt(0);
+                return (code >= 0xAC00 && code <= 0xD7A3) ||
+                       (code >= 0x3131 && code <= 0x3163) ||
+                       (code >= 0x1100 && code <= 0x11FF);
+            }
+            function isUpperCase(ch) { return ch >= 'A' && ch <= 'Z'; }
+            function isLowerCase(ch) { return ch >= 'a' && ch <= 'z'; }
+            function isDigit(ch) { return ch >= '0' && ch <= '9'; }
+            function isMathSymbol(ch) { return '*+-=<>|:\u2212\u00d7\u00f7^²³⁴⁵⁶⁷⁸⁹¹⁰()/\u2234\u2235≤≥≠≒≡≦≧≪≫≲≳\u00b0\u22a5\u2026\u00b7\u33a0\uff1c\uff1e\u2103\u2109\uff0d\uff0b\uff1d'.includes(ch); }  // *곱셈, 부등호, | 절댓값/수선, ℃℉, 전각－＋＝
+            function isGreekMathLetter(ch) {
+                var code = ch.charCodeAt(0);
+                return (code >= 0x03B1 && code <= 0x03C9) || (code >= 0x0391 && code <= 0x03A9);  // α~ω, Α~Ω
+            }
+            function isShapeSymbol(ch) { return '\u25b3\u25a1\u25cb\u25c7\u25bd\u25a0\u25cf\u2220'.includes(ch); }  // △□○◇▽■● + ∠(각)
+
+            const UNITS = ['cm','mm','m','km','kg','g','mg','ml','l','deg','rad','sec','min','hr','hz','v','a','w'];
+
+            var segments = [];
+            var i = 0;
+            while (i < text.length) {
+                var ch = text[i];
+
+                // Shape symbol + following letters = SEGMENT
+                if (isShapeSymbol(ch)) {
+                    var j = i + 1;
+                    while (j < text.length && (isUpperCase(text[j]) || isLowerCase(text[j]))) j++;
+                    // ∠ + 1 letter (e.g. ∠B in ∠B/2) → FORMULA로 분리하여 분수 변환 가능하게 함
+                    if (ch === '\u2220' && (j - i - 1) === 1) {
+                        segments.push({type: 'FORMULA', text: text.slice(i, i + 1), start: i, end: i + 1});
+                        i = i + 1;
+                    } else {
+                        segments.push({type: 'SEGMENT', text: text.slice(i, j), start: i, end: j});
+                        i = j;
+                    }
+                    continue;
+                }
+
+                // Uppercase 2+ letters = check for SEGMENT
+                if (isUpperCase(ch)) {
+                    var j = i + 1;
+                    while (j < text.length && isUpperCase(text[j])) j++;
+                    var word = text.slice(i, j);
+                    if (j - i >= 2 && UNITS.indexOf(word.toLowerCase()) === -1) {
+                        segments.push({type: 'SEGMENT', text: word, start: i, end: j});
+                    } else {
+                        segments.push({type: 'FORMULA', text: word, start: i, end: j});
+                    }
+                    i = j;
+                    continue;
+                }
+
+                // Korean
+                if (isKorean(ch)) {
+                    var j = i + 1;
+                    while (j < text.length && (isKorean(text[j]) || text[j] === ' ' || ',;.?!'.includes(text[j]))) {
+                        if (text[j] === ' ' || ',;.?!'.includes(text[j])) {
+                            var k = j + 1;
+                            if (k < text.length && isKorean(text[k])) {
+                                j = k + 1;
+                                continue;
+                            } else {
+                                j++;
+                                break;
+                            }
+                        }
+                        j++;
+                    }
+                    segments.push({type: 'KOREAN', text: text.slice(i, j), start: i, end: j});
+                    i = j;
+                    continue;
+                }
+
+                // 괄호로 시작하고 괄호 안에 한글이 있으면 ( ) 는 FORMULA, 내용은 한글/수식 분리
+                if (ch === '(') {
+                    var k = i + 1;
+                    while (k < text.length && (text[k] === ' ' || text[k] === '\t')) k++;
+                    if (k < text.length && isKorean(text[k])) {
+                        segments.push({type: 'FORMULA', text: ch, start: i, end: i + 1});
+                        i++;
+                        continue;
+                    }
+                }
+                
+                // Lowercase / digits / math symbols / Greek letters = FORMULA
+                if (isLowerCase(ch) || isDigit(ch) || isMathSymbol(ch) || isGreekMathLetter(ch)) {
+                    var j = i + 1;
+                    var parenDepth = (ch === '(') ? 1 : 0; // 괄호 깊이 추적
+                    
+                    // 괄호로 시작하는 경우: 괄호 안에 한글 없으면 수식, 있으면 (는 KOREAN
+                    if (ch === '(') {
+                        while (j < text.length) {
+                            if (isKorean(text[j])) break;
+                            if (text[j] === '(') parenDepth++;
+                            else if (text[j] === ')') {
+                                parenDepth--;
+                                if (parenDepth === 0) {
+                                    j++;
+                                    while (j < text.length && (isMathSymbol(text[j]) || isDigit(text[j]) || isGreekMathLetter(text[j]))) {
+                                        j++;
+                                    }
+                                    break;
+                                }
+                            }
+                            j++;
+                        }
+                        if (j <= i + 1) {
+                            segments.push({type: 'KOREAN', text: ch, start: i, end: i + 1});
+                            i++;
+                            continue;
+                        }
+                    } else {
+                        // 일반 수식 기호 처리
+                        while (j < text.length && (isLowerCase(text[j]) || isDigit(text[j]) || isMathSymbol(text[j]) || isGreekMathLetter(text[j]) || text[j] === '.' || text[j] === ' ')) {
+                            // 괄호 깊이 추적
+                            if (text[j] === '(') parenDepth++;
+                            else if (text[j] === ')') parenDepth--;
+                            
+                            // 괄호 안에 있으면 공백으로 분리하지 않음
+                            if (text[j] === ' ') {
+                                var k = j + 1;
+                                if (k < text.length && (isLowerCase(text[k]) || isDigit(text[k]) || isMathSymbol(text[k]) || isGreekMathLetter(text[k]))) {
+                                    j = k;
+                                    continue;
+                                } else {
+                                    break;
+                                }
+                            }
+                            // digit. 뒤에 숫자가 없으면 문장 마침표로 처리 (3.4는 수식, x=3.의 .는 한글)
+                            if (text[j] === '.' && j > i && isDigit(text[j - 1])) {
+                                var nextIdx = j + 1;
+                                if (nextIdx >= text.length || !isDigit(text[nextIdx])) {
+                                    break;
+                                }
+                            }
+                            j++;
+                        }
+                    }
+                    segments.push({type: 'FORMULA', text: text.slice(i, j), start: i, end: j});
+                    i = j;
+                    continue;
+                }
+
+                // Whitespace / punctuation between segments
+                if (ch === ' ' || ch === '\t') {
+                    segments.push({type: 'KOREAN', text: ch, start: i, end: i + 1});
+                    i++;
+                    continue;
+                }
+                
+                // 줄바꿈은 별도 타입으로 처리
+                if (ch === '\n' || ch === '\r') {
+                    // \r\n (Windows) 또는 \n (Unix) 처리
+                    if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') {
+                        segments.push({type: 'NEWLINE', text: '\r\n', start: i, end: i + 2});
+                        i += 2;
+                    } else {
+                        segments.push({type: 'NEWLINE', text: ch, start: i, end: i + 1});
+                        i++;
+                    }
+                    continue;
+                }
+
+                // Anything else
+                segments.push({type: 'KOREAN', text: ch, start: i, end: i + 1});
+                i++;
+            }
+
+            // Merge adjacent same-type segments
+            // 단, 점/함수 표기: 단일 대문자+P 바로 다음 괄호식은 별도 세그먼트 유지 (예: P(6a, 0))
+            var merged = [];
+            for (var s = 0; s < segments.length; s++) {
+                var seg = segments[s];
+                var last = merged.length > 0 ? merged[merged.length - 1] : null;
+                var isPointOrFunc = last && last.type === 'FORMULA' && seg.type === 'FORMULA' &&
+                    /^[A-Z]$/.test(last.text) && seg.text.charAt(0) === '(';
+                if (merged.length > 0 && last.type === seg.type && !isPointOrFunc) {
+                    last.text += seg.text;
+                    last.end = seg.end;
+                } else {
+                    merged.push({type: seg.type, text: seg.text, start: seg.start, end: seg.end});
+                }
+            }
+
+            // SEGMENT + FORMULA 병합 (분수·위첨자가 세그먼트 경계를 넘지 않도록)
+            // 1) ^ 또는 ²³⁴ 등 위첨자로 시작 (예: AB^2=5) 2) / 로 시작하는 분수 (예: AB/2=3)
+            var merged2 = [];
+            var superscriptStart = /^[\^²³⁴⁵⁶⁷⁸⁹¹⁰]/;
+            var fractionStart = /^\s*\//;  // / 숫자 또는 / 변수
+            for (var m = 0; m < merged.length; m++) {
+                var curr = merged[m];
+                var nextSeg = merged[m + 1];
+                if (m + 1 < merged.length && curr.type === 'SEGMENT' && nextSeg.type === 'FORMULA' &&
+                    nextSeg.start === curr.end && (superscriptStart.test(nextSeg.text) || fractionStart.test(nextSeg.text))) {
+                    merged2.push({type: 'SEGMENT', text: curr.text + nextSeg.text, start: curr.start, end: nextSeg.end});
+                    m++;
+                } else {
+                    merged2.push(curr);
+                }
+            }
+
+            return merged2;
+        }
+
+        // 현재 세그먼트 데이터
+        var currentSegments = [];
+
+        // 토큰화 및 미리보기
+        function tokenizeAndPreview() {
+            var text = document.getElementById('sourceText').value;
+            currentSegments = tokenizeText(text);
+            renderPreview(currentSegments);
+        }
+
+        // 미리보기 렌더링
+        function renderPreview(segments) {
+            var container = document.getElementById('segmentPreview');
+            container.innerHTML = '';
+            segments.forEach(function(seg, i) {
+                var span = document.createElement('span');
+                span.className = 'segment segment-' + seg.type.toLowerCase();
+                
+                // FORMULA 타입은 수식 변환 적용하여 표시
+                // SEGMENT 타입은 선분 변환 적용하여 표시
+                var displayText = seg.text;
+                var originalText = seg.text;
+                
+                if (seg.type === 'FORMULA') {
+                    // 수식 변환 적용
+                    displayText = applyFormulaConversion(seg.text);
+                    span.title = '유형: ' + seg.type + ' (클릭하여 변경)\n원본: ' + originalText + '\n변환: ' + displayText;
+                } else if (seg.type === 'SEGMENT') {
+                    // SEGMENT는 선분 변환(bar) + RM 추가
+                    var text = seg.text;
+                    // 공백 → 백틱
+                    text = text.replace(/ /g, '`');
+                    // 수식 변환
+                    text = convertToCustomFormat(text);
+                    // bar 변환: 대문자 정확히 2글자만 bar{}로 (△OAB 등 꼭짓점은 제외)
+                    text = text.replace(/\b([A-Z]{2})\b/g, 'bar {$1}');
+                    // RM 추가
+                    if (!text.toUpperCase().startsWith('RM')) {
+                        text = 'RM' + text;
+                    }
+                    text = text.trim();
+                    if (!text.endsWith('`')) {
+                        text += '`';
+                    }
+                    displayText = text;
+                    span.title = '유형: ' + seg.type + ' (클릭하여 변경)\n원본: ' + originalText + '\n변환: ' + displayText;
+                } else if (seg.type === 'COMPOUND_UNIT') {
+                    displayText = applyCompoundUnitConversion(seg.text);
+                    span.title = '유형: ' + seg.type + ' (클릭하여 변경)\n원본: ' + originalText + '\n변환: ' + displayText + '\n※ km/h, km/min 등 복합단위를 하나의 단위로 처리';
+                } else if (seg.type === 'NEWLINE') {
+                    // 줄바꿈은 시각적으로 표시
+                    displayText = '↵'; // 줄바꿈 기호
+                    span.title = '유형: ' + seg.type + ' (줄바꿈)';
+                    span.style.fontSize = '18px';
+                    span.style.color = '#999';
+                } else {
+                    // KOREAN은 원본 그대로
+                    span.title = '유형: ' + seg.type + ' (클릭하여 변경)';
+                }
+                
+                span.textContent = displayText;
+                span.onclick = (function(idx) {
+                    return function() {
+                        // NEWLINE은 타입 변경 불가
+                        if (currentSegments[idx].type === 'NEWLINE') {
+                            return;
+                        }
+                        var types = ['KOREAN', 'FORMULA', 'SEGMENT', 'COMPOUND_UNIT'];
+                        var tidx = types.indexOf(currentSegments[idx].type);
+                        currentSegments[idx].type = types[(tidx + 1) % 4];
+                        renderPreview(currentSegments);
+                    };
+                })(i);
+                container.appendChild(span);
+            });
+        }
+
+        // 하이브리드 결과 표시
+        function showHybridResult(message, type) {
+            var box = document.getElementById('hybridResult');
+            box.className = 'result-box show result-' + type;
+            box.textContent = message;
+        }
+
+        // HWP에서 텍스트 읽기
+        document.getElementById('readFromHwpBtn').addEventListener('click', async function() {
+            try {
+                var response = await fetch(SERVER_URL + '/read-text');
+                var data = await response.json();
+                document.getElementById('sourceText').value = data.text || '';
+                tokenizeAndPreview();
+                showHybridResult('✅ HWP에서 텍스트를 읽어왔습니다.', 'success');
+            } catch (error) {
+                showHybridResult('❌ HWP에서 텍스트 읽기 실패: ' + error.message, 'error');
+            }
+        });
+
+        // 토큰화 버튼
+        document.getElementById('tokenizeBtn').addEventListener('click', tokenizeAndPreview);
+
+        // 텍스트 입력 시 자동 토큰화
+        document.getElementById('sourceText').addEventListener('input', tokenizeAndPreview);
+
+        // 복합 단위 변환 (km/h, km/min 등 - 분수 변환 없이 하나의 단위로 처리)
+        function applyCompoundUnitConversion(text) {
+            var compoundUnits = [
+                ['km/min', '__CU_KMM__'],
+                ['km/h', '__CU_KMH__'],
+                ['km/sec', '__CU_KMS__'],
+                ['m/min', '__CU_MMM__'],
+                ['m/s', '__CU_MS__'],
+                ['cm/s', '__CU_CMS__'],
+                ['m/h', '__CU_MH__']
+            ];
+            var compoundRestore = {
+                '__CU_KMM__': 'rmkm/min',
+                '__CU_KMH__': 'rmkm/h',
+                '__CU_KMS__': 'rmkm/sec',
+                '__CU_MMM__': 'rmm/min',
+                '__CU_MS__': 'rmm/s',
+                '__CU_CMS__': 'rmcm/s',
+                '__CU_MH__': 'rmm/h'
+            };
+            var result = text;
+            // 1. 복합 단위를 슬래시 없는 placeholder로 치환 (분수 변환 회피)
+            compoundUnits.forEach(function(pair) {
+                var re = new RegExp(pair[0].replace(/\//g, '\\/'), 'gi');
+                result = result.replace(re, pair[1]);
+            });
+            // 2. applyFormulaConversion과 동일한 파이프라인 (공백→백틱, convertToCustomFormat)
+            var protectedPatterns = [
+                { pattern: /\}\s+over\s+\{/g, replacement: '} over {' },
+                { pattern: /\bbar\s+\{/g, replacement: 'bar {' },
+                { pattern: /\bsqrt\s+\{/g, replacement: 'sqrt {' },
+                { pattern: /\bbold\s+\{/g, replacement: 'bold {' },
+                { pattern: /\barch\s+\{/g, replacement: 'arch {' },
+                { pattern: /\bangle\s+\{/g, replacement: 'angle {' }
+            ];
+            var markers = [];
+            var markerIndex = 0;
+            var tempMarkerPrefix = '__TEMP_SPACE_MARKER_';
+            protectedPatterns.forEach(function(item) {
+                result = result.replace(item.pattern, function(match) {
+                    var marker = tempMarkerPrefix + markerIndex;
+                    markers.push({ marker: marker, value: item.replacement });
+                    markerIndex++;
+                    return marker;
+                });
+            });
+            result = result.replace(/,\s+/g, ',``');
+            result = result.replace(/ /g, '`');
+            markers.forEach(function(item) {
+                var escapedMarker = item.marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                result = result.replace(new RegExp(escapedMarker, 'g'), item.value);
+            });
+            result = convertToCustomFormat(result);
+            // 3. placeholder를 복합 단위(rm) 형태로 복원
+            Object.keys(compoundRestore).forEach(function(key) {
+                result = result.replace(new RegExp(key, 'g'), compoundRestore[key]);
+            });
+            var singleCharOps = ':+-=><\u00d7\u00f7|';
+            var opOnly = result.replace(/`/g, '').trim();
+            if (opOnly.length === 1 && singleCharOps.indexOf(opOnly) >= 0) {
+                result = '`' + opOnly + '`';
+            }
+            result = result.trim();
+            if (!result.endsWith('`')) {
+                result += '`';
+            }
+            return result;
+        }
+
+        // 문자열에 대해 기존 수식 변환 파이프라인을 적용하는 헬퍼 함수
+        // (기존 convertSpacesToBackticks, convertAllToBar, convertToCustomFormat를 문자열 입력으로 재활용)
+        function applyFormulaConversion(text) {
+            var result = text;
+
+            // 1. 띄어쓰기 → 백틱 변환 (보호 패턴 제외)
+            var protectedPatterns = [
+                { pattern: /\}\s+over\s+\{/g, replacement: '} over {' },
+                { pattern: /\bbar\s+\{/g, replacement: 'bar {' },
+                { pattern: /\bsqrt\s+\{/g, replacement: 'sqrt {' },
+                { pattern: /\bbold\s+\{/g, replacement: 'bold {' },
+                { pattern: /\barch\s+\{/g, replacement: 'arch {' },
+                { pattern: /\bangle\s+\{/g, replacement: 'angle {' }
+            ];
+            var markers = [];
+            var markerIndex = 0;
+            var tempMarkerPrefix = '__TEMP_SPACE_MARKER_';
+            protectedPatterns.forEach(function(item) {
+                result = result.replace(item.pattern, function(match) {
+                    var marker = tempMarkerPrefix + markerIndex;
+                    markers.push({ marker: marker, value: item.replacement });
+                    markerIndex++;
+                    return marker;
+                });
+            });
+            // 좌표/함수 인자: 쉼표 뒤 공백을 ``로 (예: (6a, 0) → (6a,``0))
+            result = result.replace(/,\s+/g, ',``');
+            result = result.replace(/ /g, '`');
+            markers.forEach(function(item) {
+                var escapedMarker = item.marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                result = result.replace(new RegExp(escapedMarker, 'g'), item.value);
+            });
+
+            // 2. 수식 변환 (convertToCustomFormat 적용 - 내부에서 f`( 함수 표기 처리)
+            result = convertToCustomFormat(result);
+
+            // 3. 단일 연산자 앞뒤 공백: ':','+','-','=','>','<','×','÷','|' → ' op ' (공백으로 통일)
+            var singleCharOps = ':+-=><\u00d7\u00f7|';
+            var opOnly = result.replace(/[`\s]/g, '').trim();
+            if (opOnly.length === 1 && singleCharOps.indexOf(opOnly) >= 0) {
+                result = ' ' + opOnly + ' ';
+            }
+
+            // 4. 마지막 백틱 추가
+            result = result.trim();
+            if (!result.endsWith('`')) {
+                result += '`';
+            }
+
+            return result;
+        }
+
+        // 공백+등호+공백을 하나의 FORMULA로 병합 (등호 주변 공백이 한글에 따로 입력되지 않도록)
+        function mergeEqualsSpaces(segments) {
+            var merged = [];
+            for (var i = 0; i < segments.length; i++) {
+                var seg = segments[i];
+                // KOREAN 공백 + FORMULA(등호만) + KOREAN 공백 → 하나의 FORMULA " = "
+                if (i + 2 < segments.length &&
+                    seg.type === 'KOREAN' && /^\s*$/.test(seg.text) &&
+                    segments[i + 1].type === 'FORMULA' && /^\s*=\s*$/.test(segments[i + 1].text) &&
+                    segments[i + 2].type === 'KOREAN' && /^\s*$/.test(segments[i + 2].text)) {
+                    merged.push({ type: 'FORMULA', text: ' = ', start: seg.start, end: segments[i + 2].end });
+                    i += 2;
+                    continue;
+                }
+                // KOREAN 공백 + FORMULA(등호만) (오른쪽 공백 없음)
+                if (i + 1 < segments.length &&
+                    seg.type === 'KOREAN' && /^\s*$/.test(seg.text) &&
+                    segments[i + 1].type === 'FORMULA' && /^\s*=\s*$/.test(segments[i + 1].text)) {
+                    merged.push({ type: 'FORMULA', text: ' = ', start: seg.start, end: segments[i + 1].end });
+                    i++;
+                    continue;
+                }
+                // FORMULA(등호만) + KOREAN 공백 (왼쪽 공백 없음)
+                if (i + 1 < segments.length &&
+                    seg.type === 'FORMULA' && /^\s*=\s*$/.test(seg.text) &&
+                    segments[i + 1].type === 'KOREAN' && /^\s*$/.test(segments[i + 1].text)) {
+                    merged.push({ type: 'FORMULA', text: ' = ', start: seg.start, end: segments[i + 1].end });
+                    i++;
+                    continue;
+                }
+                merged.push(seg);
+            }
+            return merged;
+        }
+
+        // 수식/선분 사이의 띄어쓰기(KOREAN) 제거 (AB : AE = BD 에서 공백 무시)
+        function filterSpacesBetweenFormulas(segments) {
+            return segments.filter(function(seg, i) {
+                if (seg.type !== 'KOREAN') return true;
+                if (!/^\s*$/.test(seg.text)) return true;
+                var prev = i > 0 ? segments[i - 1].type : null;
+                var next = i < segments.length - 1 ? segments[i + 1].type : null;
+                if ((prev === 'FORMULA' || prev === 'SEGMENT' || prev === 'COMPOUND_UNIT') && (next === 'FORMULA' || next === 'SEGMENT' || next === 'COMPOUND_UNIT')) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        // 세그먼트에 수식 변환을 적용하여 변환된 세그먼트 배열 생성
+        function applyConversionToSegments(segments) {
+            segments = mergeEqualsSpaces(segments);
+            segments = filterSpacesBetweenFormulas(segments);
+            return segments.map(function(seg) {
+                if (seg.type === 'KOREAN') {
+                    // …, ···, ... → 수식(cdots)으로 변환
+                    var t = seg.text.trim();
+                    if (t === '\u2026' || t === '\u00b7\u00b7\u00b7' || t === '...') {
+                        var converted = applyFormulaConversion(t);
+                        return { type: 'FORMULA', text: converted };
+                    }
+                    return { type: seg.type, text: seg.text };
+                } else if (seg.type === 'NEWLINE') {
+                    // 줄바꿈은 그대로 유지
+                    return { type: seg.type, text: seg.text };
+                } else if (seg.type === 'FORMULA') {
+                    var converted = applyFormulaConversion(seg.text);
+                    return { type: seg.type, text: converted };
+                } else if (seg.type === 'SEGMENT') {
+                    // SEGMENT는 선분 변환(bar) + RM 추가
+                    var text = seg.text;
+                    // 공백 → 백틱
+                    text = text.replace(/ /g, '`');
+                    // 수식 변환
+                    text = convertToCustomFormat(text);
+                    // bar 변환: 대문자 정확히 2글자만 bar{}로 (△OAB 등 꼭짓점은 제외)
+                    text = text.replace(/\b([A-Z]{2})\b/g, 'bar {$1}');
+                    // RM 추가
+                    if (!text.toUpperCase().startsWith('RM')) {
+                        text = 'RM' + text;
+                    }
+                    text = text.trim();
+                    if (!text.endsWith('`')) {
+                        text += '`';
+                    }
+                    return { type: seg.type, text: text };
+                } else if (seg.type === 'COMPOUND_UNIT') {
+                    var converted = applyCompoundUnitConversion(seg.text);
+                    return { type: 'FORMULA', text: converted };
+                }
+                return seg;
+            });
+        }
+
+        document.getElementById('hybridInsertBtn').addEventListener('click', async function() {
+            if (currentSegments.length === 0) {
+                showHybridResult('변환할 세그먼트가 없습니다. 먼저 텍스트를 입력하세요.', 'error');
+                return;
+            }
+
+            if (!serverReady) {
+                showHybridResult('❌ 서버가 연결되지 않았습니다.', 'error');
+                return;
+            }
+
+            var btn = document.getElementById('hybridInsertBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span>변환 중...';
+
+            try {
+                // 프론트엔드에서 기존 수식 변환 규칙 적용
+                var convertedSegments = applyConversionToSegments(currentSegments);
+
+                var response = await fetch(SERVER_URL + '/hybrid-insert', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        segments: convertedSegments,
+                        fontSize: parseFloat(fontSizeInput.value) || 11,
+                        preConverted: true
+                    })
+                });
+
+                var data = await response.json();
+
+                if (response.ok && data.success) {
+                    showHybridResult('✅ 성공! ' + (data.message || '일괄 변환이 완료되었습니다.'), 'success');
+                } else {
+                    showHybridResult('❌ 오류: ' + (data.message || '알 수 없는 오류'), 'error');
+                }
+            } catch (error) {
+                showHybridResult('❌ 연결 오류: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🚀 일괄 변환 실행';
+            }
+        });
+    </script>
+</body>
+</html>
